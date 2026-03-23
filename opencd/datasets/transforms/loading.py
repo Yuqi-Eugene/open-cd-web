@@ -170,8 +170,12 @@ class MultiImgLoadAnnotations(MMCV_LoadAnnotations):
         if results.get('format_seg_map', None) is not None:
             if results['format_seg_map'] == 'to_binary':
                 gt_semantic_seg_copy = gt_semantic_seg.copy()
-                gt_semantic_seg[gt_semantic_seg_copy < 128] = 0
-                gt_semantic_seg[gt_semantic_seg_copy >= 128] = 1
+                # Support both 0/1 and 0/255-style binary masks.
+                if gt_semantic_seg_copy.max() <= 1:
+                    gt_semantic_seg = gt_semantic_seg_copy.astype(np.uint8)
+                else:
+                    gt_semantic_seg[gt_semantic_seg_copy < 128] = 0
+                    gt_semantic_seg[gt_semantic_seg_copy >= 128] = 1
             else:
                 raise ValueError('Invalid value {}'.format(results['format_seg_map']))
         # modify if custom classes
@@ -307,8 +311,12 @@ class MultiImgMultiAnnLoadAnnotations(MMCV_LoadAnnotations):
         if results.get('format_seg_map', None) is not None:
             if results['format_seg_map'] == 'to_binary':
                 gt_semantic_seg_copy = gt_semantic_seg.copy()
-                gt_semantic_seg[gt_semantic_seg_copy < 128] = 0
-                gt_semantic_seg[gt_semantic_seg_copy >= 128] = 1
+                # Support both 0/1 and 0/255-style binary masks.
+                if gt_semantic_seg_copy.max() <= 1:
+                    gt_semantic_seg = gt_semantic_seg_copy.astype(np.uint8)
+                else:
+                    gt_semantic_seg[gt_semantic_seg_copy < 128] = 0
+                    gt_semantic_seg[gt_semantic_seg_copy >= 128] = 1
             else:
                 raise ValueError('Invalid value {}'.format(results['format_seg_map']))
         # modify if custom classes

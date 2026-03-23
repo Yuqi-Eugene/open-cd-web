@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>批量预处理</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="prep-page">
+  <div class="bg-orb a"></div><div class="bg-orb b"></div>
+  <div class="shell">
+    <header class="topbar">
+      <div class="title"><h1>批量样本预处理</h1><p>命名、拉伸、nodata、划分</p></div>
+      <nav class="nav">
+        <a data-page="home" href="/">首页</a>
+        <a data-page="prep" href="/preprocess.html">样本预处理</a>
+        <a data-page="data" href="/dataset.html">样本可视化</a>
+        <a data-page="train" href="/training.html">训练验证测试</a>
+        <a data-page="infer" href="/interpret.html">样本解译</a>
+        <a data-page="docs" href="/docs.html">数据规范</a>
+      </nav>
+    </header>
+
+    <main class="grid prep-grid">
+      <section class="card col-12">
+        <h2>运行环境</h2>
+        <label>Python 解释器</label>
+        <div class="path-input">
+          <input id="pythonExec" value="" placeholder="自动检测（推荐）" />
+          <button type="button" data-browse-file="pythonExec">浏览文件</button>
+        </div>
+        <div class="row">
+          <button type="button" id="detectPython">一键检测 Python 环境</button>
+          <div id="pythonHint" class="note">正在等待检测...</div>
+        </div>
+      </section>
+
+      <section class="card col-6 prep-task-card">
+        <h2>批量命名</h2>
+        <label>目录</label>
+        <div class="path-input"><input id="renameDir" value="data" /><button type="button" data-browse="renameDir">浏览</button></div>
+        <label>后缀过滤</label>
+        <div class="path-input path-input-ghost">
+          <input id="renameExt" value=".tif" />
+          <span class="path-ghost" aria-hidden="true"></span>
+        </div>
+        <div class="row">
+          <label>添加前缀<input id="renamePrefix" /></label>
+          <label>添加后缀<input id="renameSuffix" /></label>
+        </div>
+        <div class="row">
+          <label>移除前缀<input id="renameRemovePrefix" /></label>
+          <label>移除后缀<input id="renameRemoveSuffix" /></label>
+        </div>
+        <label class="inline-check"><input type="checkbox" id="renameRecursive" checked /> 递归</label>
+        <button class="primary task-run" id="runRename">启动命名任务</button>
+      </section>
+
+      <section class="card col-6 prep-task-card">
+        <h2>uint8+拉伸+nodata处理</h2>
+        <label>输入目录</label>
+        <div class="path-input"><input id="uint8In" value="data/wj1024_split/train/A" /><button type="button" data-browse="uint8In">浏览</button></div>
+        <label>输出目录</label>
+        <div class="path-input"><input id="uint8Out" value="data/wj1024_split/train/A_uint8" /><button type="button" data-browse="uint8Out">浏览</button></div>
+        <div class="row">
+          <label>clip_p2<input id="clipP2" type="number" value="2" /></label>
+          <label>clip_p98<input id="clipP98" type="number" value="98" /></label>
+        </div>
+        <div class="row">
+          <label>map_nodata_to<input id="mapNodata" type="number" value="0" /></label>
+          <label>nodata_value<input id="nodataValue" type="number" value="0" /></label>
+        </div>
+        <label class="inline-check"><input id="noScale" type="checkbox" /> no_scale</label>
+        <button class="primary task-run" id="runUint8">启动 uint8 任务</button>
+      </section>
+
+      <section class="card col-6">
+        <h2>自动划分数据集</h2>
+        <label>输入目录</label>
+        <div class="path-input"><input id="splitIn" value="data/wj1024" /><button type="button" data-browse="splitIn">浏览</button></div>
+        <label>输出目录</label>
+        <div class="path-input"><input id="splitOut" value="data/wj1024_split_new" /><button type="button" data-browse="splitOut">浏览</button></div>
+        <div class="row">
+          <label>train<input id="ratioTrain" type="number" step="0.01" value="0.7" /></label>
+          <label>val<input id="ratioVal" type="number" step="0.01" value="0.15" /></label>
+        </div>
+        <div class="row">
+          <label>test<input id="ratioTest" type="number" step="0.01" value="0.15" /></label>
+          <label>method<select id="splitMethod"><option value="copy">copy</option><option value="move">move</option><option value="symlink">symlink</option></select></label>
+        </div>
+        <button class="primary" id="runSplit">启动切分任务</button>
+      </section>
+
+      <section class="card col-6">
+        <h2>任务日志</h2>
+        <label>Job ID<input id="jobId" placeholder="点击下方任务可自动填充" /></label>
+        <div class="row">
+          <button id="refreshJobs">刷新任务</button>
+          <button class="success" id="viewLog">查看日志</button>
+        </div>
+        <div id="jobChips" class="chips"></div>
+        <pre id="jobLog" class="log">暂无日志</pre>
+        <p id="status" class="note">就绪</p>
+      </section>
+    </main>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/preprocess.js"></script>
+</body>
+</html>

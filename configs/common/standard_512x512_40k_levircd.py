@@ -2,8 +2,8 @@ _base_ = './standard_256x256_40k_levircd.py'
 
 crop_size = (512, 512)
 train_pipeline = [
-    dict(type='MultiImgLoadImageFromFile'),
-    dict(type='MultiImgLoadAnnotations'),
+    dict(type='MultiImgLoadImageFromFile', imdecode_backend='tifffile'),
+    dict(type='MultiImgLoadAnnotations', imdecode_backend='tifffile'),
     dict(type='MultiImgRandomRotate', prob=0.5, degree=180),
     dict(type='MultiImgRandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
     dict(type='MultiImgRandomFlip', prob=0.5, direction='horizontal'),

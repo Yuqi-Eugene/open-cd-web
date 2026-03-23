@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>样本解译</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/interpret.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="title">
+        <h1>样本解译工作台</h1>
+        <p>测试集预测结果与标签叠加比对</p>
+      </div>
+      <nav class="nav">
+        <a data-page="home" href="/">首页</a>
+        <a data-page="prep" href="/preprocess.html">样本预处理</a>
+        <a data-page="data" href="/dataset.html">样本可视化</a>
+        <a data-page="train" href="/training.html">训练验证测试</a>
+        <a data-page="infer" href="/interpret.html">样本解译</a>
+        <a data-page="docs" href="/docs.html">数据规范</a>
+      </nav>
+    </header>
+
+    <main class="ip-layout">
+      <aside class="ip-sidebar">
+        <section class="ip-pane">
+          <div class="ip-pane-head">Browser</div>
+          <div class="ip-toolbar ip-grid3">
+            <input id="treeRoot" value="data/wj1024_split/test/A" />
+            <button id="browseRoot" type="button">浏览</button>
+          </div>
+          <div class="ip-toolbar ip-grid3">
+            <input id="predRoot" value="output/pred" />
+            <button id="browsePredRoot" type="button">预测目录</button>
+          </div>
+          <div class="ip-toolbar ip-grid3">
+            <input id="modelPath" placeholder="可选：选择 pth 仅用于记录当前解译模型" />
+            <button id="browseModel" type="button">模型(pth)</button>
+          </div>
+          <div id="treeStatus" class="ip-status">请选择测试样本与预测目录。</div>
+          <div id="treePane" class="tree-list ip-tree"></div>
+        </section>
+
+        <section class="ip-pane ip-layers">
+          <div class="ip-pane-head">Layers</div>
+          <div class="ip-layer-list">
+            <label><input id="layerA" type="checkbox" checked /> B 底图</label>
+            <label><input id="layerGt" type="checkbox" checked /> GT 矢量</label>
+            <label><input id="layerPred" type="checkbox" checked /> Pred 矢量</label>
+          </div>
+          <div id="pairInfo" class="ip-meta">点击左侧测试影像后显示匹配信息。</div>
+        </section>
+      </aside>
+
+      <section class="ip-viewer">
+        <header class="ip-viewer-head">
+          <div>
+            <strong>Viewer（GT vs Pred）</strong>
+            <span id="viewerPath">未选择样本</span>
+          </div>
+        </header>
+
+        <div class="ip-viewer-body">
+          <div id="viewerEmpty" class="ip-viewer-empty">在左侧 Browser 里选择测试影像文件开始预览。</div>
+          <div class="ip-canvas ip-canvas-main" id="overlayCanvas">
+            <img id="imgBase" alt="base" />
+            <svg id="svgGt" viewBox="0 0 1 1" preserveAspectRatio="none"></svg>
+            <svg id="svgPred" viewBox="0 0 1 1" preserveAspectRatio="none"></svg>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/interpret.js"></script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>训练验证测试</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/training.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="title">
+        <h1>训练、验证、测试</h1>
+        <p>模型配置、任务调度、日志追踪与指标可视化</p>
+      </div>
+      <nav class="nav">
+        <a data-page="home" href="/">首页</a>
+        <a data-page="prep" href="/preprocess.html">样本预处理</a>
+        <a data-page="data" href="/dataset.html">样本可视化</a>
+        <a data-page="train" href="/training.html">训练验证测试</a>
+        <a data-page="infer" href="/interpret.html">样本解译</a>
+        <a data-page="docs" href="/docs.html">数据规范</a>
+      </nav>
+    </header>
+
+    <main class="tr-layout">
+      <section class="tr-top-grid">
+        <article class="card tr-card tr-config-card">
+          <header class="tr-card-head">
+            <h2>实验配置</h2>
+            <p>选择配置、权重与运行参数</p>
+          </header>
+
+          <div class="tr-block">
+            <div class="tr-row">
+              <label>Config 检索关键词
+                <input id="configSearch" placeholder="例如 changer_ex_r18" />
+              </label>
+              <div class="tr-btn-cell">
+                <button id="loadConfigs">加载配置列表</button>
+              </div>
+            </div>
+            <label>Config
+              <select id="configSelect"></select>
+            </label>
+            <div class="tr-row">
+              <div class="tr-btn-cell">
+                <button id="loadCheckpoints">刷新权重列表</button>
+              </div>
+              <div class="tr-inline-note">刷新后再选择 Checkpoint</div>
+            </div>
+            <label>Checkpoint（仅验证/测试必选）
+              <select id="ckptSelect"></select>
+            </label>
+          </div>
+
+          <div class="tr-block">
+            <div class="tr-row">
+              <label>work_dir
+                <input id="workDir" value="work_dirs/my_exp" />
+              </label>
+              <label>resume_from
+                <input id="resumeFrom" placeholder="可选" />
+              </label>
+            </div>
+            <label>extra args
+              <textarea id="extraArgs" placeholder="例如 --cfg-options train_dataloader.batch_size=2 train_cfg.max_iters=10000"></textarea>
+            </label>
+            <label>数据集目录（可选，自动注入 data_root）
+              <div class="tr-path-input">
+                <input id="datasetRoot" placeholder="例如 data/wj1024_split" />
+                <button id="browseDatasetRoot" type="button">浏览</button>
+              </div>
+            </label>
+            <div class="tr-row">
+              <label>测试输出目录
+                <input id="testOut" value="output/pred" />
+              </label>
+              <label class="tr-checkline"><input id="amp" type="checkbox" /> 启用 AMP（仅加速卡）</label>
+            </div>
+          </div>
+
+          <div class="tr-actions">
+            <button class="primary" id="runTrain">开始训练</button>
+            <button class="success" id="runVal">开始验证</button>
+            <button class="success" id="runTest">开始测试</button>
+            <label class="tr-upload">导入参数 JSON
+              <input id="importParams" type="file" accept="application/json" />
+            </label>
+          </div>
+        </article>
+
+        <article class="card tr-card tr-metrics-card">
+          <header class="tr-card-head">
+            <h2>指标曲线</h2>
+            <p>从 work_dir 读取 scalars.json 并可视化</p>
+          </header>
+          <div class="tr-row">
+            <label>metrics work_dir
+              <input id="metricsWorkDir" value="work_dirs/wj1024_changerex_r18" />
+            </label>
+            <div class="tr-btn-cell">
+              <button class="primary" id="loadScalars">加载曲线</button>
+            </div>
+          </div>
+          <div id="metricList" class="chips"></div>
+          <svg id="chart"></svg>
+        </article>
+      </section>
+
+      <section class="tr-bottom-log">
+        <article class="card tr-card tr-log-card">
+          <header class="tr-card-head">
+            <h2>任务与日志</h2>
+            <p>查看任务状态并追踪输出</p>
+          </header>
+
+          <div class="tr-row tr-log-actions">
+            <div class="tr-btn-cell">
+              <button id="refreshJobs">刷新任务</button>
+            </div>
+            <div class="tr-btn-cell">
+              <button id="viewLog">查看日志</button>
+            </div>
+            <div class="tr-btn-cell">
+              <button id="cancelJob">停止任务</button>
+            </div>
+          </div>
+
+          <label>Job ID
+            <input id="jobId" placeholder="点击任务标签自动填充" />
+          </label>
+          <div id="jobChips" class="chips"></div>
+          <pre id="jobLog" class="log">暂无日志</pre>
+          <p id="status" class="note">就绪</p>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/training.js"></script>
+</body>
+</html>

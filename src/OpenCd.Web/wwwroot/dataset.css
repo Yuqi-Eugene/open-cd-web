@@ -1,0 +1,250 @@
+.ds-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 12px;
+  height: calc(100dvh - 120px);
+  min-height: 0;
+}
+
+.ds-sidebar {
+  display: grid;
+  grid-template-rows: 1fr 170px;
+  gap: 12px;
+  min-height: 0;
+  max-height: calc(100dvh - 120px);
+}
+
+.ds-pane {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ds-pane-head {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 650;
+  background: var(--surface-2);
+}
+
+.ds-toolbar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ds-toolbar button {
+  width: auto;
+}
+
+.ds-status {
+  margin: 8px 10px;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ds-tree {
+  margin: 0 10px 10px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.ds-tree .tree-node.selected {
+  border-color: #a8b2c3;
+  background: #eef2f7;
+}
+
+.ds-layer-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+.ds-layer-list label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.ds-layer-list input {
+  width: auto;
+  margin: 0;
+}
+
+.ds-meta {
+  margin: 0 10px 10px;
+  padding: 7px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow: auto;
+  flex: 1;
+}
+
+.ds-viewer {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+}
+
+.ds-viewer-head {
+  border-bottom: 1px solid var(--border);
+  padding: 10px 14px;
+  background: var(--surface-2);
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 10px;
+  align-items: center;
+}
+
+.ds-viewer-head strong {
+  display: block;
+  font-size: 13px;
+}
+
+.ds-viewer-head span {
+  font-size: 12px;
+  color: var(--muted);
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ds-compare-toolbar label {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.ds-viewer-body {
+  position: relative;
+  display: grid;
+  grid-template-rows: 1fr;
+  padding: 10px;
+  min-height: 0;
+}
+
+.ds-view {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+  height: 100%;
+}
+
+.ds-view-title {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 650;
+  color: #374151;
+}
+
+.ds-canvas {
+  position: relative;
+  background: #0b1220;
+  border-radius: 0 0 10px 10px;
+  overflow: hidden;
+  min-height: 0;
+  height: 100%;
+}
+
+.ds-canvas img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.ds-canvas img.overlay {
+  clip-path: inset(0 0 0 50%);
+}
+
+.ds-canvas svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+#compareLine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: #f59e0b;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+.ds-viewer-empty {
+  position: absolute;
+  inset: 10px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 12px;
+  background: #f8fafc;
+  z-index: 2;
+}
+
+@media (max-width: 1040px) {
+  .ds-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 0;
+  }
+
+  .ds-sidebar {
+    grid-template-rows: auto auto;
+    max-height: none;
+  }
+
+  .ds-viewer-head {
+    grid-template-columns: 1fr;
+  }
+
+  .ds-canvas {
+    min-height: 360px;
+  }
+
+  .ds-layer-list {
+    grid-template-columns: 1fr;
+  }
+}

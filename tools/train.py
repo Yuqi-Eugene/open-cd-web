@@ -4,11 +4,29 @@ import logging
 import os
 import os.path as osp
 
+# Force CPU execution on macOS when requested by launcher.
+# This must run before importing mmengine/mmseg to avoid selecting MPS device.
+if os.getenv('OPENCD_FORCE_CPU', '') == '1':
+    try:
+        import torch
+        if hasattr(torch.backends, 'mps'):
+            torch.backends.mps.is_available = lambda: False  # type: ignore
+        os.environ['PYTORCH_MPS_DISABLE'] = '1'
+    except Exception:
+        pass
+
 from mmengine.config import Config, DictAction
+from mmengine.device import utils as mmengine_device_utils
 from mmengine.logging import print_log
 from mmengine.runner import Runner
 
 from opencd.registry import RUNNERS
+
+if os.getenv('OPENCD_FORCE_CPU', '') == '1':
+    try:
+        mmengine_device_utils.DEVICE = 'cpu'
+    except Exception:
+        pass
 
 
 def parse_args():

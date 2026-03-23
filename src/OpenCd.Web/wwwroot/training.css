@@ -1,0 +1,205 @@
+.tr-layout {
+  display: grid;
+  gap: 8px;
+}
+
+.tr-top-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  align-items: stretch;
+}
+
+.tr-top-grid > .tr-card {
+  grid-column: auto;
+}
+
+.tr-bottom-log {
+  display: grid;
+}
+
+.tr-card {
+  padding: 9px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.tr-metrics-card,
+.tr-log-card {
+  min-height: 0;
+}
+
+.tr-card-head {
+  margin-bottom: 6px;
+}
+
+.tr-card-head h2 {
+  margin: 0;
+}
+
+.tr-card-head p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.tr-block {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  padding: 7px;
+  margin-bottom: 6px;
+}
+
+.tr-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.tr-row > label {
+  margin-bottom: 0;
+}
+
+.tr-path-input {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.tr-path-input button {
+  width: auto;
+  min-width: 72px;
+}
+
+.tr-btn-cell {
+  display: flex;
+  align-items: flex-end;
+}
+
+.tr-btn-cell button {
+  min-height: 34px;
+}
+
+.tr-inline-note {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.tr-checkline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.tr-checkline input {
+  width: auto;
+  margin: 0;
+}
+
+.tr-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(180px, 1.1fr);
+  gap: 7px;
+  align-items: stretch;
+}
+
+.tr-actions button {
+  min-height: 34px;
+}
+
+.tr-upload {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: var(--muted);
+  min-height: 34px;
+  margin-bottom: 0;
+}
+
+.tr-upload input {
+  margin-top: 3px;
+}
+
+.tr-log-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  max-width: 560px;
+  margin-bottom: 4px;
+}
+
+#jobChips {
+  margin: 3px 0 6px;
+  max-height: 64px;
+  overflow: auto;
+}
+
+#jobLog {
+  min-height: clamp(170px, 24vh, 300px);
+  max-height: 40vh;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+#status {
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+#chart {
+  margin-top: 3px;
+  height: clamp(220px, 30vh, 360px);
+  min-height: 220px;
+  flex: 1;
+}
+
+.tr-metrics-card .tr-row {
+  margin-bottom: 6px;
+}
+
+.tr-metrics-card #metricList {
+  margin: 1px 0 5px;
+}
+
+.tr-config-card #extraArgs {
+  min-height: 70px;
+  max-height: 110px;
+}
+
+@media (max-width: 900px) {
+  .tr-top-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 780px) {
+  .tr-row,
+  .tr-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .tr-log-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .tr-checkline {
+    margin-top: 0;
+  }
+
+  #chart {
+    height: 190px;
+  }
+}

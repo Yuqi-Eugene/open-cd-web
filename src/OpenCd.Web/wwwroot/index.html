@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>平台首页</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="title">
+        <h1>重庆市测绘科学技术研究院变化检测平台</h1>
+        <p>基础测绘分院 · 2026.03</p>
+      </div>
+      <nav class="nav">
+        <a data-page="home" href="/">首页</a>
+        <a data-page="prep" href="/preprocess.html">样本预处理</a>
+        <a data-page="data" href="/dataset.html">样本可视化</a>
+        <a data-page="train" href="/training.html">训练验证测试</a>
+        <a data-page="infer" href="/interpret.html">样本解译</a>
+        <a data-page="docs" href="/docs.html">数据规范</a>
+      </nav>
+    </header>
+
+    <main class="home-main">
+      <section class="card home-entry-wrap">
+        <header class="home-entry-head">
+          <h2>功能入口</h2>
+          <p>选择一个工作模块继续</p>
+        </header>
+        <div class="home-entry-grid">
+          <a class="home-entry" href="/preprocess.html">
+            <strong>样本预处理</strong>
+            <span>批命名、uint8 转换、nodata 处理、自动切分 train/val/test。</span>
+          </a>
+          <a class="home-entry" href="/dataset.html">
+            <strong>样本可视化</strong>
+            <span>目录树浏览、自动配对 A/B、对比查看与矢量叠加核验。</span>
+          </a>
+          <a class="home-entry" href="/training.html">
+            <strong>训练验证测试</strong>
+            <span>模型选择、参数导入、任务调度、日志追踪与指标曲线。</span>
+          </a>
+          <a class="home-entry" href="/interpret.html">
+            <strong>样本解译</strong>
+            <span>浏览测试样本，叠加展示 GT 与预测结果，进行可视化核验。</span>
+          </a>
+          <a class="home-entry" href="/docs.html">
+            <strong>数据规范</strong>
+            <span>样本尺寸、格式要求、标签规则与 nodata 约束说明。</span>
+          </a>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script>
+    attachNav("home");
+  </script>
+</body>
+</html>

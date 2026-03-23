@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>样本可视化</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/dataset.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="title">
+        <h1>样本可视化工作台</h1>
+        <p>自动匹配样本可视化</p>
+      </div>
+      <nav class="nav">
+        <a data-page="home" href="/">首页</a>
+        <a data-page="prep" href="/preprocess.html">样本预处理</a>
+        <a data-page="data" href="/dataset.html">样本可视化</a>
+        <a data-page="train" href="/training.html">训练验证测试</a>
+        <a data-page="infer" href="/interpret.html">样本解译</a>
+        <a data-page="docs" href="/docs.html">数据规范</a>
+      </nav>
+    </header>
+
+    <main class="ds-layout">
+      <aside class="ds-sidebar">
+        <section class="ds-pane">
+          <div class="ds-pane-head">Browser</div>
+          <div class="ds-toolbar">
+            <input id="treeRoot" value="data/wj1024_split" />
+            <button id="browseRoot" type="button">浏览</button>
+          </div>
+          <div id="treeStatus" class="ds-status">请选择目录并加载。</div>
+          <div id="treePane" class="tree-list ds-tree"></div>
+        </section>
+
+        <section class="ds-pane ds-layers">
+          <div class="ds-pane-head">Layers</div>
+          <div class="ds-layer-list">
+            <label><input id="layerA" type="checkbox" checked /> A 底图</label>
+            <label><input id="layerB" type="checkbox" checked /> B 对比层</label>
+            <label><input id="layerLabel" type="checkbox" checked /> Label 矢量</label>
+          </div>
+          <div id="pairInfo" class="ds-meta">点击左侧影像后显示匹配信息。</div>
+        </section>
+      </aside>
+
+      <section class="ds-viewer">
+        <header class="ds-viewer-head">
+          <div>
+            <strong>Viewer</strong>
+            <span id="viewerPath">未选择样本</span>
+          </div>
+          <div class="ds-compare-toolbar">
+            <label>对比刷条</label>
+            <input id="compareSlider" type="range" min="0" max="100" value="50" />
+          </div>
+        </header>
+
+        <div class="ds-viewer-body">
+          <div id="viewerEmpty" class="ds-viewer-empty">在左侧 Browser 里选择一个影像文件开始预览。</div>
+
+          <article class="ds-view" id="panelMain">
+            <div class="ds-view-title">A/B 动态对比</div>
+            <div class="ds-canvas" id="compareCanvas">
+              <img id="imgA" alt="A" />
+              <img id="imgB" alt="B" class="overlay" />
+              <svg id="svgLabel" viewBox="0 0 1 1" preserveAspectRatio="none"></svg>
+              <div id="compareLine"></div>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/dataset.js"></script>
+</body>
+</html>
