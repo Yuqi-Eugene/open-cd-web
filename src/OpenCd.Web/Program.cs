@@ -1,9 +1,14 @@
 using System.Diagnostics;
+using System.IdentityModel.Tokens.Jwt;
 using System.Runtime.InteropServices;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.IdentityModel.Tokens;
 using OpenCd.Web.Models;
 using OpenCd.Web.Services;
 
@@ -28,6 +33,37 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.WriteIndented = true;
 });
 
+var jwtIssuer = "OpenCd.Web";
+var jwtAudience = "OpenCd.Web.Client";
+var jwtSecret = Environment.GetEnvironmentVariable("OPENCD_JWT_SECRET");
+if (string.IsNullOrWhiteSpace(jwtSecret))
+{
+    jwtSecret = "OpenCd.Web.DevOnly.ReplaceThisSecretInProduction.2026";
+}
+
+var jwtKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret));
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateIssuerSigningKey = true,
+            ValidateLifetime = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = jwtKey,
+            ClockSkew = TimeSpan.FromMinutes(1)
+        };
+    });
+
+builder.Services.AddAuthorizationBuilder()
+    .SetFallbackPolicy(new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build());
+
 builder.Services.AddSingleton<PathService>();
 builder.Services.AddSingleton<JobRunnerService>();
 builder.Services.AddSingleton<OpenCdService>();
@@ -36,20 +72,59 @@ var app = builder.Build();
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapGet("/api/health", (PathService paths) => new
 {
     ok = true,
     repoRoot = paths.RepoRoot,
     serverTime = DateTimeOffset.Now
+}).AllowAnonymous();
+
+app.MapPost("/api/auth/login", (LoginRequest req) =>
+{
+    if (string.IsNullOrWhiteSpace(req.Username) || string.IsNullOrWhiteSpace(req.Password))
+    {
+        return Results.BadRequest("Username and password are required.");
+    }
+
+    var adminUser = Environment.GetEnvironmentVariable("OPENCD_ADMIN_USER") ?? "admin";
+    var adminPass = Environment.GetEnvironmentVariable("OPENCD_ADMIN_PASS") ?? "admin123";
+
+    if (!string.Equals(req.Username, adminUser, StringComparison.Ordinal) ||
+        !string.Equals(req.Password, adminPass, StringComparison.Ordinal))
+    {
+        return Results.Unauthorized();
+    }
+
+    var token = BuildToken(req.Username, "admin", jwtIssuer, jwtAudience, jwtKey, out var expiresAt);
+    return Results.Ok(new LoginResponse(token, req.Username, "admin", expiresAt));
+}).AllowAnonymous();
+
+app.MapPost("/api/auth/internal-login", () =>
+{
+    var betaName = Environment.GetEnvironmentVariable("OPENCD_INTERNAL_USER") ?? "internal";
+    var token = BuildToken(betaName, "internal", jwtIssuer, jwtAudience, jwtKey, out var expiresAt);
+    return Results.Ok(new LoginResponse(token, betaName, "internal", expiresAt));
+}).AllowAnonymous();
+
+app.MapGet("/api/auth/me", (ClaimsPrincipal user) =>
+{
+    var name = user.Identity?.Name ?? user.FindFirstValue(ClaimTypes.Name) ?? "unknown";
+    var role = user.FindFirstValue(ClaimTypes.Role) ?? "unknown";
+    return Results.Ok(new { Username = name, Role = role });
 });
 
 app.MapGet("/api/system/choose-directory", async (string? startPath, bool? simple, PathService paths) =>
 {
+    var dataRoot = Path.Combine(paths.RepoRoot, "data");
+    var defaultRoot = Directory.Exists(dataRoot) ? dataRoot : paths.RepoRoot;
+
     if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
     {
         var fallback = string.IsNullOrWhiteSpace(startPath)
-            ? paths.RepoRoot
+            ? defaultRoot
             : paths.ResolveInsideRepo(startPath);
 
         if (File.Exists(fallback))
@@ -89,7 +164,7 @@ POSIX path of chosenFolder
     else
     {
         var startDir = string.IsNullOrWhiteSpace(startPath)
-            ? paths.RepoRoot
+            ? defaultRoot
             : paths.ResolveInsideRepo(startPath);
 
         // Finder default location must be an existing alias/folder.
@@ -99,7 +174,7 @@ POSIX path of chosenFolder
             var parent = Directory.GetParent(defaultDir);
             if (parent is null)
             {
-                defaultDir = paths.RepoRoot;
+                defaultDir = defaultRoot;
                 break;
             }
             defaultDir = parent.FullName;
@@ -344,7 +419,7 @@ app.MapGet("/api/data/raw", (string path, PathService paths) =>
     }
 
     return Results.File(fullPath, contentType, enableRangeProcessing: true);
-});
+}).AllowAnonymous();
 
 app.MapGet("/api/data/preview", async (string path, PathService paths) =>
 {
@@ -396,7 +471,7 @@ app.MapGet("/api/data/preview", async (string path, PathService paths) =>
     File.Delete(tmpFile);
 
     return Results.File(bytes, "image/png");
-});
+}).AllowAnonymous();
 
 app.MapGet("/api/data/label-vectors", async (string path, PathService paths) =>
 {
@@ -523,7 +598,7 @@ app.MapPost("/api/upload", async (HttpRequest request, PathService paths) =>
         }
 
         var target = (form["target"].FirstOrDefault() ?? "dataset").Trim().ToLowerInvariant();
-        var rootRel = target == "model" ? "data/uploads/models" : "data/uploads/datasets";
+        var rootRel = target == "model" ? "data/models" : "data";
         var rootAbs = paths.ResolveInsideRepo(rootRel);
         Directory.CreateDirectory(rootAbs);
 
@@ -943,4 +1018,29 @@ static string? DetectFirstImageSuffix(string datasetRoot, string subDir)
     }
 
     return Path.GetExtension(file).ToLowerInvariant();
+}
+
+static string BuildToken(
+    string username,
+    string role,
+    string issuer,
+    string audience,
+    SymmetricSecurityKey key,
+    out DateTimeOffset expiresAt)
+{
+    expiresAt = DateTimeOffset.UtcNow.AddHours(12);
+    var claims = new[]
+    {
+        new Claim(ClaimTypes.Name, username),
+        new Claim(ClaimTypes.Role, role)
+    };
+    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+    var token = new JwtSecurityToken(
+        issuer: issuer,
+        audience: audience,
+        claims: claims,
+        notBefore: DateTime.UtcNow,
+        expires: expiresAt.UtcDateTime,
+        signingCredentials: creds);
+    return new JwtSecurityTokenHandler().WriteToken(token);
 }

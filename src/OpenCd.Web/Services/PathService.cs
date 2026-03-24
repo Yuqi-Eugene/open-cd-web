@@ -13,7 +13,31 @@ public sealed class PathService
 
     public PathService(IHostEnvironment env)
     {
-        RepoRoot = Path.GetFullPath(Path.Combine(env.ContentRootPath, "..", ".."));
+        var overrideRoot = Environment.GetEnvironmentVariable("OPENCD_REPO_ROOT");
+        if (!string.IsNullOrWhiteSpace(overrideRoot))
+        {
+            RepoRoot = Path.GetFullPath(overrideRoot);
+            return;
+        }
+
+        // Dev run: ContentRoot is usually <repo>/src/OpenCd.Web
+        var devCandidate = Path.GetFullPath(Path.Combine(env.ContentRootPath, "..", ".."));
+        if (Directory.Exists(Path.Combine(devCandidate, "src", "OpenCd.Web")))
+        {
+            RepoRoot = devCandidate;
+            return;
+        }
+
+        // Published run: ContentRoot is usually <repo>/publish
+        var publishCandidate = Path.GetFullPath(Path.Combine(env.ContentRootPath, ".."));
+        if (Directory.Exists(Path.Combine(publishCandidate, "src", "OpenCd.Web")))
+        {
+            RepoRoot = publishCandidate;
+            return;
+        }
+
+        // Fallback for uncommon layouts.
+        RepoRoot = devCandidate;
     }
 
     public string ResolveInsideRepo(string relativeOrAbsolute)

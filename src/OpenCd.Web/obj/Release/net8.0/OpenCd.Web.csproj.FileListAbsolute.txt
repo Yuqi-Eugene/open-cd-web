@@ -28,3 +28,13 @@
 /Users/heyuqi/Downloads/Coding/Geospatial/open-cd/src/OpenCd.Web/obj/Release/net8.0/OpenCd.Web.pdb
 /Users/heyuqi/Downloads/Coding/Geospatial/open-cd/src/OpenCd.Web/obj/Release/net8.0/OpenCd.Web.genruntimeconfig.cache
 /Users/heyuqi/Downloads/Coding/Geospatial/open-cd/src/OpenCd.Web/obj/Release/net8.0/ref/OpenCd.Web.dll
+/Users/heyuqi/Downloads/Coding/Geospatial/open-cd/src/OpenCd.Web/bin/Release/net8.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll
+/Users/heyuqi/Downloads/Coding/Geospatial/open-cd/src/OpenCd.Web/bin/Release/net8.0/Microsoft.IdentityModel.Abstractions.dll
+/Users/heyuqi/Downloads/Coding/Geospatial/open-cd/src/OpenCd.Web/bin/Release/net8.0/Microsoft.IdentityModel.JsonWebTokens.dll
+/Users/heyuqi/Downloads/Coding/Geospatial/open-cd/src/OpenCd.Web/bin/Release/net8.0/Microsoft.IdentityModel.Logging.dll
+/Users/heyuqi/Downloads/Coding/Geospatial/open-cd/src/OpenCd.Web/bin/Release/net8.0/Microsoft.IdentityModel.Protocols.dll
+/Users/heyuqi/Downloads/Coding/Geospatial/open-cd/src/OpenCd.Web/bin/Release/net8.0/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+/Users/heyuqi/Downloads/Coding/Geospatial/open-cd/src/OpenCd.Web/bin/Release/net8.0/Microsoft.IdentityModel.Tokens.dll
+/Users/heyuqi/Downloads/Coding/Geospatial/open-cd/src/OpenCd.Web/bin/Release/net8.0/System.IdentityModel.Tokens.Jwt.dll
+/Users/heyuqi/Downloads/Coding/Geospatial/open-cd/src/OpenCd.Web/obj/Release/net8.0/OpenCd.Web.csproj.AssemblyReference.cache
+/Users/heyuqi/Downloads/Coding/Geospatial/open-cd/src/OpenCd.Web/obj/Release/net8.0/OpenCd.Web.csproj.Up2Date

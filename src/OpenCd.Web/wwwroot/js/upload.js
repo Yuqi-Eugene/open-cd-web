@@ -33,6 +33,10 @@ function uploadWithProgress(form) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/api/upload", true);
+    const token = window.getAuthToken ? window.getAuthToken() : "";
+    if (token) {
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    }
 
     xhr.upload.onprogress = (evt) => {
       if (!evt.lengthComputable) {

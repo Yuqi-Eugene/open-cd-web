@@ -1,7 +1,34 @@
 window.$ = (id) => document.getElementById(id);
 
+window.getAuthToken = () => localStorage.getItem("ocd_token") || "";
+window.setAuthToken = (token) => localStorage.setItem("ocd_token", token || "");
+window.clearAuthToken = () => localStorage.removeItem("ocd_token");
+
+window.logout = () => {
+  window.clearAuthToken();
+  if (!location.pathname.endsWith("/login.html")) {
+    location.href = "/login.html";
+  }
+};
+
+window.withAuthHeaders = (headers = {}) => {
+  const merged = { ...(headers || {}) };
+  const token = window.getAuthToken();
+  if (token) merged.Authorization = `Bearer ${token}`;
+  return merged;
+};
+
 window.api = async (url, options) => {
-  const res = await fetch(url, options);
+  const opts = { ...(options || {}) };
+  opts.headers = window.withAuthHeaders(opts.headers);
+  const res = await fetch(url, opts);
+  if (res.status === 401) {
+    window.clearAuthToken();
+    if (!location.pathname.endsWith("/login.html")) {
+      location.href = "/login.html";
+    }
+    throw new Error("Unauthorized");
+  }
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || `HTTP ${res.status}`);
@@ -15,6 +42,21 @@ window.postJson = (url, body) => api(url, {
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify(body)
 });
+
+window.requireAuth = async () => {
+  if (location.pathname.endsWith("/login.html")) return;
+  const token = window.getAuthToken();
+  if (!token) {
+    location.href = "/login.html";
+    return;
+  }
+  try {
+    await window.api("/api/auth/me");
+  } catch {
+    window.clearAuthToken();
+    location.href = "/login.html";
+  }
+};
 
 window.parseNumber = (id) => Number($(id).value);
 
@@ -190,3 +232,7 @@ window.pickPath = async ({ mode = "directory", startPath = "", title = "", allFi
   await load(current);
   return promise;
 };
+
+document.addEventListener("DOMContentLoaded", () => {
+  window.requireAuth();
+});

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>登录 - OpenCD Web</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .login-wrap {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+    .login-title h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+    .login-title p {
+      margin: 8px 0 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .login-actions {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <main class="login-wrap">
+    <section class="login-card">
+      <div class="login-title">
+        <h1>OpenCD 登录</h1>
+        <p>管理员账号密码登录，或使用内测一键登录。</p>
+      </div>
+
+      <label>用户名
+        <input id="username" placeholder="admin" />
+      </label>
+      <label>密码
+        <input id="password" type="password" placeholder="请输入密码" />
+      </label>
+
+      <div class="login-actions">
+        <button id="adminLogin" class="primary" type="button">管理员登录</button>
+        <button id="internalLogin" type="button">内测登录（免密码）</button>
+      </div>
+
+      <p id="loginStatus" class="note" style="margin-top: 12px;">请输入账号信息后登录。</p>
+    </section>
+  </main>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/login.js"></script>
+</body>
+</html>

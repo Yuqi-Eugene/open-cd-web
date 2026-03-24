@@ -172,9 +172,16 @@ public sealed class OpenCdService
 
     public FsListResponse ListPath(string? path, bool directoriesOnly, bool allFiles = false)
     {
-        var target = string.IsNullOrWhiteSpace(path)
-            ? _pathService.RepoRoot
-            : _pathService.ResolveInsideRepo(path);
+        string target;
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            var dataRoot = Path.Combine(_pathService.RepoRoot, "data");
+            target = Directory.Exists(dataRoot) ? dataRoot : _pathService.RepoRoot;
+        }
+        else
+        {
+            target = _pathService.ResolveInsideRepo(path);
+        }
 
         if (!Directory.Exists(target))
         {
