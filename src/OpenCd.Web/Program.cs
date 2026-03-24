@@ -34,7 +34,31 @@ app.MapGet("/api/system/choose-directory", async (string? startPath, bool? simpl
 {
     if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
     {
-        return Results.BadRequest("Only macOS is supported for Finder directory picker.");
+        var fallback = string.IsNullOrWhiteSpace(startPath)
+            ? paths.RepoRoot
+            : paths.ResolveInsideRepo(startPath);
+
+        if (File.Exists(fallback))
+        {
+            fallback = Path.GetDirectoryName(fallback) ?? paths.RepoRoot;
+        }
+
+        while (!Directory.Exists(fallback))
+        {
+            var parent = Directory.GetParent(fallback);
+            if (parent is null)
+            {
+                fallback = paths.RepoRoot;
+                break;
+            }
+            fallback = parent.FullName;
+        }
+
+        return Results.Ok(new
+        {
+            Path = paths.ToRepoRelative(fallback),
+            Mode = "server-fallback"
+        });
     }
 
     var useSimple = simple ?? false;
@@ -119,11 +143,61 @@ POSIX path of chosenFolder
     });
 });
 
-app.MapGet("/api/system/choose-file", async (string? startPath) =>
+app.MapGet("/api/system/choose-file", async (string? startPath, PathService paths) =>
 {
     if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
     {
-        return Results.BadRequest("Only macOS is supported for Finder file picker.");
+        string? TryResolveExistingFile(string? raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return null;
+            }
+
+            var candidate = Path.IsPathRooted(raw) ? raw : paths.ResolveInsideRepo(raw);
+            if (File.Exists(candidate))
+            {
+                return Path.GetFullPath(candidate);
+            }
+
+            if (Directory.Exists(candidate))
+            {
+                var found = Directory.EnumerateFiles(candidate, "*.pth", SearchOption.AllDirectories)
+                    .OrderByDescending(File.GetLastWriteTimeUtc)
+                    .FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(found))
+                {
+                    return Path.GetFullPath(found);
+                }
+            }
+
+            return null;
+        }
+
+        var file = TryResolveExistingFile(startPath);
+        if (!string.IsNullOrWhiteSpace(file))
+        {
+            return Results.Ok(new { Path = file, Mode = "server-fallback" });
+        }
+
+        var workRoot = paths.ResolveInsideRepo("work_dirs");
+        if (Directory.Exists(workRoot))
+        {
+            var fallback = Directory.EnumerateFiles(workRoot, "*.pth", SearchOption.AllDirectories)
+                .OrderByDescending(File.GetLastWriteTimeUtc)
+                .FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(fallback))
+            {
+                return Results.Ok(new { Path = Path.GetFullPath(fallback), Mode = "server-fallback" });
+            }
+        }
+
+        return Results.BadRequest("Non-macOS server mode: no selectable file found. Please input file path manually.");
+    }
+
+    if (!string.IsNullOrWhiteSpace(startPath) && !Path.IsPathRooted(startPath))
+    {
+        startPath = paths.ResolveInsideRepo(startPath);
     }
 
     var defaultDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
