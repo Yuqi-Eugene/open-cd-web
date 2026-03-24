@@ -371,7 +371,18 @@ app.MapGet("/api/opencd/checkpoints", (string? keyword, OpenCdService service) =
 
 app.MapGet("/api/opencd/scalars", (string workDir, OpenCdService service) =>
 {
-    return Results.Ok(service.ReadScalars(workDir));
+    try
+    {
+        return Results.Ok(service.ReadScalars(workDir));
+    }
+    catch (DirectoryNotFoundException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
 });
 
 app.MapGet("/api/data/index", (string datasetRoot, OpenCdService service) =>
@@ -381,12 +392,42 @@ app.MapGet("/api/data/index", (string datasetRoot, OpenCdService service) =>
 
 app.MapGet("/api/fs/list", (string? path, bool? dirsOnly, OpenCdService service) =>
 {
-    return Results.Ok(service.ListPath(path, dirsOnly ?? false, false));
+    try
+    {
+        return Results.Ok(service.ListPath(path, dirsOnly ?? false, false));
+    }
+    catch (DirectoryNotFoundException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
 });
 
 app.MapGet("/api/fs/list-all", (string? path, bool? dirsOnly, OpenCdService service) =>
 {
-    return Results.Ok(service.ListPath(path, dirsOnly ?? false, true));
+    try
+    {
+        return Results.Ok(service.ListPath(path, dirsOnly ?? false, true));
+    }
+    catch (DirectoryNotFoundException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
 });
 
 app.MapPost("/api/fs/mkdir", (MkdirRequest req, PathService paths) =>
@@ -408,12 +449,50 @@ app.MapGet("/api/data/sample", (string datasetRoot, string split, string sample,
 
 app.MapGet("/api/data/match", (string path, OpenCdService service) =>
 {
-    return Results.Ok(service.MatchPairFromPath(path));
+    try
+    {
+        return Results.Ok(service.MatchPairFromPath(path));
+    }
+    catch (FileNotFoundException ex)
+    {
+        return Results.NotFound(ex.Message);
+    }
+    catch (DirectoryNotFoundException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
 });
 
 app.MapGet("/api/data/match-infer", (string path, string predRoot, OpenCdService service) =>
 {
-    return Results.Ok(service.MatchPredictionFromPath(path, predRoot));
+    try
+    {
+        return Results.Ok(service.MatchPredictionFromPath(path, predRoot));
+    }
+    catch (FileNotFoundException ex)
+    {
+        return Results.NotFound(ex.Message);
+    }
+    catch (DirectoryNotFoundException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
 });
 
 app.MapGet("/api/data/raw", (string path, PathService paths) =>
