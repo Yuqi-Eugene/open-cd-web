@@ -2,11 +2,22 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.StaticFiles;
 using OpenCd.Web.Models;
 using OpenCd.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+const long MaxUploadBytes = 5L * 1024 * 1024 * 1024; // 5 GB
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = MaxUploadBytes;
+});
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = MaxUploadBytes;
+});
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
