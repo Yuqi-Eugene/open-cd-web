@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("OpenCd.Web")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9fb0247f8a43bca8dcf8850b6203cd557403c480")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7be2be1651a34da57dead1a8667476cbc73ca055")]
 [assembly: System.Reflection.AssemblyProductAttribute("OpenCd.Web")]
 [assembly: System.Reflection.AssemblyTitleAttribute("OpenCd.Web")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

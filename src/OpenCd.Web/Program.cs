@@ -17,6 +17,9 @@ builder.WebHost.ConfigureKestrel(options =>
 builder.Services.Configure<FormOptions>(options =>
 {
     options.MultipartBodyLengthLimit = MaxUploadBytes;
+    options.ValueCountLimit = 200_000;
+    options.MultipartHeadersCountLimit = 128;
+    options.MultipartHeadersLengthLimit = 32 * 1024;
 });
 
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -505,76 +508,99 @@ app.MapPost("/api/jobs/cancel-all", (JobRunnerService jobs) =>
 
 app.MapPost("/api/upload", async (HttpRequest request, PathService paths) =>
 {
-    if (!request.HasFormContentType)
+    try
     {
-        return Results.BadRequest("Expected multipart/form-data.");
-    }
-
-    var form = await request.ReadFormAsync();
-    var files = form.Files;
-    if (files.Count == 0)
-    {
-        return Results.BadRequest("No files uploaded.");
-    }
-
-    var target = (form["target"].FirstOrDefault() ?? "dataset").Trim().ToLowerInvariant();
-    var rootRel = target == "model" ? "data/uploads/models" : "data/uploads/datasets";
-    var rootAbs = paths.ResolveInsideRepo(rootRel);
-    Directory.CreateDirectory(rootAbs);
-
-    var stamp = DateTimeOffset.UtcNow.ToString("yyyyMMdd_HHmmss");
-    var batchAbs = Path.Combine(rootAbs, stamp);
-    Directory.CreateDirectory(batchAbs);
-
-    static string SanitizeRelative(string raw)
-    {
-        var text = raw.Replace('\\', '/').TrimStart('/');
-        var parts = text.Split('/', StringSplitOptions.RemoveEmptyEntries)
-            .Where(p => p != "." && p != "..")
-            .Select(p => string.Concat(p.Where(c => c != '\0')))
-            .ToArray();
-        return string.Join('/', parts);
-    }
-
-    var saved = new List<string>();
-    foreach (var file in files)
-    {
-        if (file.Length <= 0) continue;
-
-        var rel = SanitizeRelative(file.FileName);
-        if (string.IsNullOrWhiteSpace(rel))
+        if (!request.HasFormContentType)
         {
-            rel = Path.GetFileName(file.FileName);
-        }
-        if (string.IsNullOrWhiteSpace(rel))
-        {
-            continue;
+            return Results.BadRequest("Expected multipart/form-data.");
         }
 
-        var full = Path.GetFullPath(Path.Combine(batchAbs, rel));
-        if (!full.StartsWith(batchAbs, StringComparison.Ordinal))
+        var form = await request.ReadFormAsync();
+        var files = form.Files;
+        if (files.Count == 0)
         {
-            continue;
+            return Results.BadRequest("No files uploaded.");
         }
 
-        var parent = Path.GetDirectoryName(full);
-        if (!string.IsNullOrWhiteSpace(parent))
+        var target = (form["target"].FirstOrDefault() ?? "dataset").Trim().ToLowerInvariant();
+        var rootRel = target == "model" ? "data/uploads/models" : "data/uploads/datasets";
+        var rootAbs = paths.ResolveInsideRepo(rootRel);
+        Directory.CreateDirectory(rootAbs);
+
+        var stamp = DateTimeOffset.UtcNow.ToString("yyyyMMdd_HHmmss");
+        var batchAbs = Path.Combine(rootAbs, stamp);
+        Directory.CreateDirectory(batchAbs);
+
+        static string SanitizeRelative(string raw)
         {
-            Directory.CreateDirectory(parent);
+            var text = raw.Replace('\\', '/').TrimStart('/');
+            var parts = text.Split('/', StringSplitOptions.RemoveEmptyEntries)
+                .Where(p => p != "." && p != "..")
+                .Select(p => string.Concat(p.Where(c => c != '\0')))
+                .ToArray();
+            return string.Join('/', parts);
         }
 
-        await using var stream = File.Create(full);
-        await file.CopyToAsync(stream);
-        saved.Add(paths.ToRepoRelative(full));
+        var saved = new List<string>();
+        var skipped = new List<string>();
+        foreach (var file in files)
+        {
+            if (file.Length <= 0) continue;
+
+            try
+            {
+                var rel = SanitizeRelative(file.FileName);
+                if (string.IsNullOrWhiteSpace(rel))
+                {
+                    rel = Path.GetFileName(file.FileName);
+                }
+                if (string.IsNullOrWhiteSpace(rel))
+                {
+                    skipped.Add(file.FileName);
+                    continue;
+                }
+
+                var full = Path.GetFullPath(Path.Combine(batchAbs, rel));
+                if (!full.StartsWith(batchAbs, StringComparison.Ordinal))
+                {
+                    skipped.Add(file.FileName);
+                    continue;
+                }
+
+                var parent = Path.GetDirectoryName(full);
+                if (!string.IsNullOrWhiteSpace(parent))
+                {
+                    Directory.CreateDirectory(parent);
+                }
+
+                await using var stream = File.Create(full);
+                await file.CopyToAsync(stream);
+                saved.Add(paths.ToRepoRelative(full));
+            }
+            catch
+            {
+                skipped.Add(file.FileName);
+            }
+        }
+
+        if (saved.Count == 0)
+        {
+            return Results.Problem("Upload failed: no file was saved.");
+        }
+
+        return Results.Ok(new
+        {
+            Target = target,
+            Root = paths.ToRepoRelative(batchAbs),
+            Count = saved.Count,
+            Skipped = skipped.Count,
+            Files = saved.Take(200).ToList()
+        });
     }
-
-    return Results.Ok(new
+    catch (Exception ex)
     {
-        Target = target,
-        Root = paths.ToRepoRelative(batchAbs),
-        Count = saved.Count,
-        Files = saved.Take(200).ToList()
-    });
+        return Results.Problem($"Upload failed: {ex.Message}");
+    }
 });
 
 app.MapPost("/api/preprocess/batch-name", (BatchRenameRequest req, PathService paths, JobRunnerService jobs) =>
