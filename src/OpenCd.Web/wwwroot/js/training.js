@@ -4,6 +4,82 @@ const state = {
   scalars: null,
   selectedMetrics: new Set(["loss", "decode.acc_seg"])
 };
+const LAST_JOB_KEY = "opencd.train.lastJobId";
+
+function rememberJobId(id) {
+  if (!id) return;
+  localStorage.setItem(LAST_JOB_KEY, id);
+}
+
+function pickRunningTrainJob(jobs) {
+  const list = (jobs || []).filter((j) => j && j.Status === 1 && String(j.Type || "").startsWith("opencd."));
+  if (!list.length) return null;
+  list.sort((a, b) => String(b.CreatedAt || "").localeCompare(String(a.CreatedAt || "")));
+  return list[0];
+}
+
+async function restoreJobContext(jobs) {
+  const input = $("jobId");
+  let id = input.value.trim();
+  if (!id) {
+    const running = pickRunningTrainJob(jobs);
+    id = running?.Id || localStorage.getItem(LAST_JOB_KEY) || "";
+    if (id) input.value = id;
+  }
+  if (!id) return;
+  try {
+    await loadTrainingLog();
+    setStatus("status", `已恢复任务状态: ${id}`);
+    rememberJobId(id);
+  } catch {
+    // Keep quiet if the remembered job no longer exists.
+  }
+}
+
+function isImportantLogLine(line) {
+  const s = String(line || "");
+  if (!s) return false;
+
+  if (/\[(CMD|CWD|ARGS|ENV|PROCESS|ERROR|HEARTBEAT)\]/.test(s)) return true;
+  if (/Traceback|Exception|Error:|FAILED|exited with code/i.test(s)) return true;
+  if (/Iter\(|Epoch\(|\[\s*\d+\/\d+\]/i.test(s)) return true;
+  if (/\b(loss|lr|eta|time|mIoU|mFscore|mAcc|aAcc|mPrecision|mRecall)\b/i.test(s)) return true;
+  if (/Checkpoints will be saved|Saving checkpoint|best checkpoint/i.test(s)) return true;
+  if (/任务已提交|JobId|Canceled by user/i.test(s)) return true;
+
+  return false;
+}
+
+async function loadTrainingLog() {
+  const id = $("jobId").value.trim();
+  if (!id) return;
+
+  const statusMap = {
+    0: "Pending",
+    1: "Running",
+    2: "Succeeded",
+    3: "Failed",
+    4: "Canceled"
+  };
+
+  const compact = $("compactLog")?.checked ?? true;
+  const job = await api(`/api/jobs/${encodeURIComponent(id)}`);
+  const data = await api(`/api/jobs/${encodeURIComponent(id)}/log?tail=1200`);
+  const srcLines = data.Lines || [];
+  const lines = compact ? srcLines.filter(isImportantLogLine) : srcLines;
+  const bodyLines = compact && lines.length === 0 ? ["[提示] 当前暂无关键进度日志，可取消勾选“仅显示关键日志”查看完整输出。"] : lines;
+
+  const header = [
+    `Job: ${job.Type} | ${statusMap[job.Status] ?? job.Status} | ${job.Id}`,
+    `Started: ${job.StartedAt || "-"}`,
+    `Ended: ${job.EndedAt || "-"}`,
+    `ExitCode: ${job.ExitCode ?? "-"}`,
+    `Error: ${job.Error || "-"}`,
+    `View: ${compact ? "关键日志" : "完整日志"}`
+  ].join("\n");
+
+  $("jobLog").textContent = `${header}\n\n${bodyLines.join("\n")}`;
+}
 
 async function loadConfigs() {
   const keyword = $("configSearch").value.trim();
@@ -56,9 +132,10 @@ async function submit(url, body, msg) {
   try {
     const res = await postJson(url, body);
     $("jobId").value = res.Id;
+    rememberJobId(res.Id);
     setStatus("status", `${msg}，JobId: ${res.Id}`);
     await renderJobs("jobChips");
-    await loadLog("jobId", "jobLog");
+    await loadTrainingLog();
   } catch (e) {
     setStatus("status", String(e), true);
   }
@@ -258,7 +335,7 @@ $("loadConfigs").onclick = () => loadConfigs().catch((e) => setStatus("status", 
 $("loadCheckpoints").onclick = () => loadCheckpoints().catch((e) => setStatus("status", String(e), true));
 $("browseDatasetRoot").onclick = () => chooseDatasetRoot().catch((e) => setStatus("status", String(e), true));
 $("refreshJobs").onclick = () => renderJobs("jobChips").catch((e) => setStatus("status", String(e), true));
-$("viewLog").onclick = () => loadLog("jobId", "jobLog").catch((e) => setStatus("status", String(e), true));
+$("viewLog").onclick = () => loadTrainingLog().catch((e) => setStatus("status", String(e), true));
 $("cancelJob").onclick = async () => {
   const id = $("jobId").value.trim();
   if (!id) {
@@ -269,7 +346,7 @@ $("cancelJob").onclick = async () => {
     await api(`/api/jobs/${encodeURIComponent(id)}/cancel`, { method: "POST" });
     setStatus("status", `已请求停止任务: ${id}`);
     await renderJobs("jobChips");
-    await loadLog("jobId", "jobLog");
+    await loadTrainingLog();
   } catch (e) {
     setStatus("status", `停止任务失败: ${String(e)}`, true);
   }
@@ -338,12 +415,41 @@ $("importParams").onchange = async (e) => {
   }
 };
 
-Promise.all([loadConfigs(), loadCheckpoints(), renderJobs("jobChips"), loadScalars()])
-  .catch((e) => setStatus("status", String(e), true));
+$("jobId").addEventListener("change", () => {
+  const id = $("jobId").value.trim();
+  if (id) rememberJobId(id);
+});
+$("compactLog").addEventListener("change", () => {
+  if ($("jobId").value.trim()) {
+    loadTrainingLog().catch(() => {});
+  }
+});
+
+(async () => {
+  try {
+    await loadConfigs();
+    await loadCheckpoints();
+    const jobs = await renderJobs("jobChips");
+    await restoreJobContext(jobs);
+    await loadScalars();
+  } catch (e) {
+    setStatus("status", String(e), true);
+  }
+})();
 
 setInterval(() => {
-  renderJobs("jobChips").catch(() => {});
-  if ($("jobId").value.trim()) loadLog("jobId", "jobLog").catch(() => {});
+  renderJobs("jobChips")
+    .then((jobs) => {
+      if (!$("jobId").value.trim()) {
+        const running = pickRunningTrainJob(jobs);
+        if (running?.Id) {
+          $("jobId").value = running.Id;
+          rememberJobId(running.Id);
+        }
+      }
+    })
+    .catch(() => {});
+  if ($("jobId").value.trim()) loadTrainingLog().catch(() => {});
 }, 5000);
 
 let resizeTimer = null;
