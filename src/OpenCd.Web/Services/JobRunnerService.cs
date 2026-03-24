@@ -31,21 +31,69 @@ public sealed class JobRunnerService
 
     public IReadOnlyCollection<JobInfo> ListJobs()
     {
-        return _jobs.Values
+        var list = _jobs.Values
             .Select(x => x.Job)
+            .OrderByDescending(x => x.CreatedAt)
+            .ToList();
+
+        var logsDir = Path.Combine(_pathService.RepoRoot, "runtime", "jobs");
+        if (!Directory.Exists(logsDir))
+        {
+            return list;
+        }
+
+        var existing = new HashSet<string>(list.Select(x => x.Id), StringComparer.OrdinalIgnoreCase);
+        foreach (var log in Directory.EnumerateFiles(logsDir, "*.log", SearchOption.TopDirectoryOnly)
+                     .OrderByDescending(File.GetLastWriteTimeUtc)
+                     .Take(200))
+        {
+            var id = Path.GetFileNameWithoutExtension(log);
+            if (string.IsNullOrWhiteSpace(id) || existing.Contains(id))
+            {
+                continue;
+            }
+
+            if (TryRecoverFromLog(id, out var recovered, out _))
+            {
+                list.Add(recovered);
+                existing.Add(id);
+            }
+        }
+
+        return list
             .OrderByDescending(x => x.CreatedAt)
             .ToList();
     }
 
     public JobInfo? GetJob(string id)
     {
-        return _jobs.TryGetValue(id, out var state) ? state.Job : null;
+        if (_jobs.TryGetValue(id, out var state))
+        {
+            return state.Job;
+        }
+
+        return TryRecoverFromLog(id, out var recovered, out _) ? recovered : null;
     }
 
     public JobLogSnapshot? GetLog(string id, int tail = 300)
     {
         if (!_jobs.TryGetValue(id, out var state))
         {
+            if (TryRecoverFromLog(id, out var recovered, out var recoveredLines))
+            {
+                if (tail > 0 && recoveredLines.Count > tail)
+                {
+                    recoveredLines = recoveredLines[^tail..];
+                }
+
+                return new JobLogSnapshot
+                {
+                    JobId = id,
+                    Status = recovered.Status,
+                    Lines = recoveredLines
+                };
+            }
+
             return null;
         }
 
@@ -61,6 +109,77 @@ public sealed class JobRunnerService
             Status = state.Job.Status,
             Lines = lines
         };
+    }
+
+    private bool TryRecoverFromLog(string id, out JobInfo job, out List<string> lines)
+    {
+        var logPath = Path.Combine(_pathService.RepoRoot, "runtime", "jobs", $"{id}.log");
+        if (!File.Exists(logPath))
+        {
+            job = default!;
+            lines = [];
+            return false;
+        }
+
+        lines = File.ReadAllLines(logPath).ToList();
+        var status = JobStatus.Running;
+        int? exitCode = null;
+
+        for (var i = lines.Count - 1; i >= 0; i--)
+        {
+            var line = lines[i];
+            var idx = line.IndexOf("[PROCESS] exited with code ", StringComparison.OrdinalIgnoreCase);
+            if (idx >= 0)
+            {
+                var codeText = line[(idx + "[PROCESS] exited with code ".Length)..].Trim();
+                if (int.TryParse(codeText, out var code))
+                {
+                    exitCode = code;
+                    status = code == 0 ? JobStatus.Succeeded : JobStatus.Failed;
+                }
+                break;
+            }
+
+            if (line.Contains("Canceled by user", StringComparison.OrdinalIgnoreCase))
+            {
+                status = JobStatus.Canceled;
+                break;
+            }
+        }
+
+        var command = lines.FirstOrDefault(x => x.Contains("[CMD] ", StringComparison.OrdinalIgnoreCase));
+        var type = lines.FirstOrDefault(x => x.Contains("[ARGS] ", StringComparison.OrdinalIgnoreCase));
+        var cmdSummary = string.IsNullOrWhiteSpace(command) ? "Recovered from log file" : command[(command.IndexOf("[CMD] ", StringComparison.OrdinalIgnoreCase) + 6)..].Trim();
+        var derivedType = "archived";
+        if (!string.IsNullOrWhiteSpace(type))
+        {
+            if (type.Contains("tools/train.py", StringComparison.OrdinalIgnoreCase)) derivedType = "opencd.train";
+            else if (type.Contains("tools/test.py", StringComparison.OrdinalIgnoreCase)) derivedType = "opencd.test";
+        }
+
+        var createdAt = File.GetCreationTimeUtc(logPath);
+        if (createdAt == DateTime.MinValue)
+        {
+            createdAt = File.GetLastWriteTimeUtc(logPath);
+        }
+
+        job = new JobInfo
+        {
+            Id = id,
+            Type = derivedType,
+            CommandSummary = cmdSummary,
+            Status = status,
+            CreatedAt = new DateTimeOffset(createdAt, TimeSpan.Zero),
+            ExitCode = exitCode,
+            LogFilePath = _pathService.ToRepoRelative(logPath)
+        };
+
+        if (status is JobStatus.Succeeded or JobStatus.Failed or JobStatus.Canceled)
+        {
+            job.EndedAt = new DateTimeOffset(File.GetLastWriteTimeUtc(logPath), TimeSpan.Zero);
+        }
+
+        return true;
     }
 
     public JobInfo StartJob(
@@ -145,7 +264,7 @@ public sealed class JobRunnerService
                     {
                         try
                         {
-                            await Task.Delay(TimeSpan.FromMinutes(1), heartbeatCts.Token);
+                            await Task.Delay(TimeSpan.FromSeconds(30), heartbeatCts.Token);
                         }
                         catch (OperationCanceledException)
                         {
@@ -154,7 +273,7 @@ public sealed class JobRunnerService
 
                         var silence = DateTimeOffset.UtcNow - runtime.LastProcessOutputAt;
                         var silenceText = silence < TimeSpan.Zero ? "0s" : $"{(int)silence.TotalMinutes}m {silence.Seconds}s";
-                        OnLine(runtime, writer, $"[HEARTBEAT] 任务仍在运行，距离上次训练输出 {silenceText}。", countAsProcessOutput: false);
+                        OnLine(runtime, writer, $"[HEARTBEAT] 任务仍在运行，距离上次进度输出 {silenceText}。", countAsProcessOutput: false);
                     }
                 }, heartbeatCts.Token);
 

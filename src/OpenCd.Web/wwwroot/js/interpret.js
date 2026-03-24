@@ -8,6 +8,10 @@ const state = {
   requestToken: 0
 };
 
+function normalizeDisplayName(name) {
+  return String(name || "").replace(/^(train_|val_|test_)/i, "");
+}
+
 function setTreeStatus(message, isError = false) {
   const el = $("treeStatus");
   el.textContent = message;
@@ -132,8 +136,9 @@ async function autoSelectBestModel() {
 
 function updatePairInfo(match, gtVectors, predVectors) {
   const model = $("modelPath").value.trim();
+  const sampleDisplay = normalizeDisplayName(match.Sample);
   $("pairInfo").innerHTML = [
-    `<div><strong>Sample:</strong> ${match.Sample}</div>`,
+    `<div><strong>Sample:</strong> ${sampleDisplay}</div>`,
     `<div><strong>Split:</strong> ${match.Split}</div>`,
     `<div><strong>A:</strong> ${match.APath}</div>`,
     `<div><strong>B:</strong> ${match.BPath}</div>`,
@@ -198,7 +203,8 @@ function buildNode(entry) {
 
   const btn = document.createElement("button");
   btn.className = "tree-node";
-  btn.textContent = entry.IsDirectory ? `[D] ${entry.Name}` : `[F] ${entry.Name}`;
+  const displayName = entry.IsDirectory ? entry.Name : normalizeDisplayName(entry.Name);
+  btn.textContent = entry.IsDirectory ? `[D] ${displayName}` : `[F] ${displayName}`;
   li.appendChild(btn);
 
   if (entry.IsDirectory) {

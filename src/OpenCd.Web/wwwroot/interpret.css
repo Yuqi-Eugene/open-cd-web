@@ -1,6 +1,6 @@
 .ip-layout {
   display: grid;
-  grid-template-columns: 340px 1fr;
+  grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
   gap: 12px;
   height: calc(100dvh - 120px);
   min-height: 0;
@@ -11,6 +11,7 @@
   grid-template-rows: 1fr 180px;
   gap: 12px;
   min-height: 0;
+  min-width: 0;
   max-height: calc(100dvh - 120px);
 }
 
@@ -21,6 +22,7 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  min-width: 0;
 }
 
 .ip-pane-head {
@@ -40,6 +42,17 @@
 
 .ip-grid3 {
   grid-template-columns: 1fr auto;
+}
+
+.ip-grid3 > * {
+  min-width: 0;
+}
+
+.ip-toolbar input {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ip-toolbar button {
@@ -66,6 +79,14 @@
   overflow: auto;
   flex: 1;
   min-height: 0;
+}
+
+.ip-tree .tree-node {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ip-tree .tree-node.selected {
@@ -104,6 +125,8 @@
   font-size: 12px;
   line-height: 1.45;
   overflow: auto;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   flex: 1;
 }
 
@@ -114,6 +137,7 @@
   display: grid;
   grid-template-rows: auto 1fr;
   min-height: 0;
+  min-width: 0;
 }
 
 .ip-viewer-head {

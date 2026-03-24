@@ -884,6 +884,7 @@ app.MapPost("/api/opencd/test", (EvalRequest req, PathService paths, JobRunnerSe
     }
 
     AddDatasetRootCfgOptions(args, paths, req.DatasetRoot);
+    AddDefaultTrainLogInterval(args, req.ExtraArgs, 20);
     args.AddRange(SplitArgs(req.ExtraArgs));
 
     var python = paths.ResolveOpenCdPython(req.Python);
@@ -904,6 +905,7 @@ app.MapPost("/api/opencd/validate", (EvalRequest req, PathService paths, JobRunn
 
     AddOption(args, "--work-dir", req.WorkDir is null ? null : paths.ResolveInsideRepo(req.WorkDir));
     AddDatasetRootCfgOptions(args, paths, req.DatasetRoot);
+    AddDefaultTrainLogInterval(args, req.ExtraArgs, 20);
     args.AddRange(SplitArgs(req.ExtraArgs));
 
     var python = paths.ResolveOpenCdPython(req.Python);
