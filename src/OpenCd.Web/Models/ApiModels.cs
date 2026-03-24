@@ -146,3 +146,6 @@ public sealed record LoginResponse(
     string Username,
     string Role,
     DateTimeOffset ExpiresAt);
+
+public sealed record MkdirRequest(
+    string Path);

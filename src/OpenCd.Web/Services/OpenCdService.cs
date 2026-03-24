@@ -185,7 +185,19 @@ public sealed class OpenCdService
 
         if (!Directory.Exists(target))
         {
-            throw new DirectoryNotFoundException(target);
+            // Picker UX: if requested path does not exist (e.g. planned output dir),
+            // fallback to nearest existing parent directory inside repo.
+            var probe = target;
+            while (!Directory.Exists(probe))
+            {
+                var probeParent = Directory.GetParent(probe);
+                if (probeParent is null || !probeParent.FullName.StartsWith(_pathService.RepoRoot, StringComparison.Ordinal))
+                {
+                    throw new DirectoryNotFoundException(target);
+                }
+                probe = probeParent.FullName;
+            }
+            target = probe;
         }
 
         var entries = Directory.EnumerateFileSystemEntries(target)

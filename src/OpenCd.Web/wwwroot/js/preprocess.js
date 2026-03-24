@@ -1,14 +1,49 @@
 attachNav("prep");
 
+function trimTrailingSlash(p) {
+  return (p || "").replace(/[\\/]+$/, "");
+}
+
+function parentPath(p) {
+  const s = trimTrailingSlash((p || "").replace(/\\/g, "/"));
+  if (!s) return "";
+  const i = s.lastIndexOf("/");
+  if (i <= 0) return "";
+  return s.slice(0, i);
+}
+
+function deriveUint8Out(inDir) {
+  const s = trimTrailingSlash((inDir || "").replace(/\\/g, "/"));
+  return s ? `${s}_uint8` : "";
+}
+
+function autoSyncUint8Out(previousIn, nextIn) {
+  const out = $("uint8Out");
+  if (!out) return;
+  const prevDerived = deriveUint8Out(previousIn);
+  const curOut = trimTrailingSlash(out.value);
+  if (!curOut || curOut === prevDerived) {
+    out.value = deriveUint8Out(nextIn);
+  }
+}
+
+let lastUint8InValue = $("uint8In")?.value?.trim?.() || "";
+
 async function chooseDirectory(targetInputId) {
   try {
     const current = $(targetInputId).value?.trim() || "";
+    const fallback = targetInputId === "uint8Out" ? (parentPath(current) || $("uint8In").value?.trim() || "") : current;
     const path = await pickPath({
       mode: "directory",
-      startPath: current,
+      startPath: fallback,
       title: "选择目录"
     });
+    const previous = current;
     $(targetInputId).value = path;
+    if (targetInputId === "uint8In") {
+      autoSyncUint8Out(previous, path);
+      lastUint8InValue = path;
+    }
     setStatus("status", `已选择目录: ${path}`);
   } catch (e) {
     setStatus("status", String(e), true);
@@ -87,6 +122,21 @@ $("runUint8").onclick = () => submit("/api/preprocess/uint8", {
   Python: $("pythonExec").value || null
 }, "uint8 任务已提交");
 
+$("createUint8Out").onclick = async () => {
+  try {
+    const dir = $("uint8Out").value.trim();
+    if (!dir) {
+      setStatus("status", "请先填写输出目录", true);
+      return;
+    }
+    const res = await postJson("/api/fs/mkdir", { Path: dir });
+    $("uint8Out").value = res.Path || dir;
+    setStatus("status", `已创建输出目录: ${$("uint8Out").value}`);
+  } catch (e) {
+    setStatus("status", String(e), true);
+  }
+};
+
 $("runSplit").onclick = () => submit("/api/preprocess/split", {
   InDir: $("splitIn").value,
   OutDir: $("splitOut").value,
@@ -118,6 +168,12 @@ document.querySelectorAll("button[data-browse]").forEach((btn) => {
 });
 document.querySelectorAll("button[data-browse-file]").forEach((btn) => {
   btn.addEventListener("click", () => chooseFile(btn.dataset.browseFile));
+});
+
+$("uint8In").addEventListener("change", (ev) => {
+  const nextIn = ev.target?.value || "";
+  autoSyncUint8Out(lastUint8InValue, nextIn);
+  lastUint8InValue = nextIn;
 });
 
 detectPython(false).catch(() => {});

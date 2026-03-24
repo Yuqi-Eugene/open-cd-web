@@ -389,6 +389,18 @@ app.MapGet("/api/fs/list-all", (string? path, bool? dirsOnly, OpenCdService serv
     return Results.Ok(service.ListPath(path, dirsOnly ?? false, true));
 });
 
+app.MapPost("/api/fs/mkdir", (MkdirRequest req, PathService paths) =>
+{
+    if (string.IsNullOrWhiteSpace(req.Path))
+    {
+        return Results.BadRequest("Path is required.");
+    }
+
+    var full = paths.ResolveInsideRepo(req.Path);
+    Directory.CreateDirectory(full);
+    return Results.Ok(new { Path = paths.ToRepoRelative(full) });
+});
+
 app.MapGet("/api/data/sample", (string datasetRoot, string split, string sample, OpenCdService service) =>
 {
     return Results.Ok(service.GetSampleDetail(datasetRoot, split, sample));
