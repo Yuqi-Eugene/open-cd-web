@@ -1,8 +1,15 @@
 window.$ = (id) => document.getElementById(id);
 
-window.getAuthToken = () => localStorage.getItem("ocd_token") || "";
-window.setAuthToken = (token) => localStorage.setItem("ocd_token", token || "");
-window.clearAuthToken = () => localStorage.removeItem("ocd_token");
+window.getAuthToken = () => sessionStorage.getItem("ocd_token") || "";
+window.setAuthToken = (token) => {
+  sessionStorage.setItem("ocd_token", token || "");
+  // cleanup old persistent token from previous versions
+  localStorage.removeItem("ocd_token");
+};
+window.clearAuthToken = () => {
+  sessionStorage.removeItem("ocd_token");
+  localStorage.removeItem("ocd_token");
+};
 
 window.logout = () => {
   window.clearAuthToken();
@@ -142,6 +149,7 @@ window.pickPath = async ({ mode = "directory", startPath = "", title = "", allFi
           <div id="ppList" class="pp-list"></div>
           <div class="pp-actions">
             <button id="ppCancel" type="button">取消</button>
+            <button id="ppCreateDir" type="button">新建文件夹</button>
             <button id="ppSelectDir" type="button">选择当前目录</button>
           </div>
         </div>
@@ -156,9 +164,11 @@ window.pickPath = async ({ mode = "directory", startPath = "", title = "", allFi
   const listEl = $q("ppList");
   const pathInput = $q("ppPathInput");
   const btnSelectDir = $q("ppSelectDir");
+  const btnCreateDir = $q("ppCreateDir");
 
   titleEl.textContent = title || (mode === "file" ? "选择文件" : "选择目录");
   btnSelectDir.style.display = mode === "directory" ? "inline-flex" : "none";
+  btnCreateDir.style.display = mode === "directory" ? "inline-flex" : "none";
 
   let current = startPath || "";
   let parentPath = null;
@@ -212,6 +222,24 @@ window.pickPath = async ({ mode = "directory", startPath = "", title = "", allFi
     cleanup();
     resolve(current);
   };
+  const onCreateDir = async () => {
+    try {
+      const raw = prompt("请输入新建文件夹名称");
+      if (!raw) return;
+      const name = raw.trim();
+      if (!name) return;
+      if (name.includes("/") || name.includes("\\")) {
+        statusEl.textContent = "文件夹名称不能包含斜杠";
+        return;
+      }
+      const target = `${current.replace(/[\\/]+$/, "")}/${name}`;
+      await window.postJson("/api/fs/mkdir", { Path: target });
+      await load(current);
+      statusEl.textContent = `已创建: ${target}`;
+    } catch (e) {
+      statusEl.textContent = String(e);
+    }
+  };
 
   const cleanup = () => {
     modal.classList.add("hidden");
@@ -220,6 +248,7 @@ window.pickPath = async ({ mode = "directory", startPath = "", title = "", allFi
     $q("ppGo").removeEventListener("click", onGo);
     $q("ppUp").removeEventListener("click", onUp);
     $q("ppSelectDir").removeEventListener("click", onSelectDir);
+    $q("ppCreateDir").removeEventListener("click", onCreateDir);
   };
 
   $q("ppCancel").addEventListener("click", onCancel);
@@ -227,6 +256,7 @@ window.pickPath = async ({ mode = "directory", startPath = "", title = "", allFi
   $q("ppGo").addEventListener("click", onGo);
   $q("ppUp").addEventListener("click", onUp);
   $q("ppSelectDir").addEventListener("click", onSelectDir);
+  $q("ppCreateDir").addEventListener("click", onCreateDir);
 
   modal.classList.remove("hidden");
   await load(current);

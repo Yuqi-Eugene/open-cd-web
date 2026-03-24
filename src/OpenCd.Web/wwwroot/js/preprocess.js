@@ -14,7 +14,14 @@ function parentPath(p) {
 
 function deriveUint8Out(inDir) {
   const s = trimTrailingSlash((inDir || "").replace(/\\/g, "/"));
-  return s ? `${s}_uint8` : "";
+  if (!s) return "";
+  const i = s.lastIndexOf("/");
+  if (i <= 0) {
+    return `${s}_uint8`;
+  }
+  const parent = s.slice(0, i);
+  const leaf = s.slice(i + 1);
+  return `${parent}_uint8/${leaf}`;
 }
 
 function autoSyncUint8Out(previousIn, nextIn) {
@@ -122,21 +129,6 @@ $("runUint8").onclick = () => submit("/api/preprocess/uint8", {
   Python: $("pythonExec").value || null
 }, "uint8 任务已提交");
 
-$("createUint8Out").onclick = async () => {
-  try {
-    const dir = $("uint8Out").value.trim();
-    if (!dir) {
-      setStatus("status", "请先填写输出目录", true);
-      return;
-    }
-    const res = await postJson("/api/fs/mkdir", { Path: dir });
-    $("uint8Out").value = res.Path || dir;
-    setStatus("status", `已创建输出目录: ${$("uint8Out").value}`);
-  } catch (e) {
-    setStatus("status", String(e), true);
-  }
-};
-
 $("runSplit").onclick = () => submit("/api/preprocess/split", {
   InDir: $("splitIn").value,
   OutDir: $("splitOut").value,
@@ -175,6 +167,15 @@ $("uint8In").addEventListener("change", (ev) => {
   autoSyncUint8Out(lastUint8InValue, nextIn);
   lastUint8InValue = nextIn;
 });
+
+// Keep default output convention as: parent + _uint8 + /leaf
+(() => {
+  const inDir = $("uint8In")?.value?.trim() || "";
+  const outDir = $("uint8Out")?.value?.trim() || "";
+  if (!outDir || outDir.endsWith("/A_uint8") || outDir.endsWith("\\A_uint8")) {
+    $("uint8Out").value = deriveUint8Out(inDir);
+  }
+})();
 
 detectPython(false).catch(() => {});
 renderJobs("jobChips").catch((e) => setStatus("status", String(e), true));
