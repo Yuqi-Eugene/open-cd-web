@@ -79,3 +79,114 @@ window.loadLog = async (jobIdInputId, logId) => {
   ].join("\n");
   $(logId).textContent = `${header}\n\n${(data.Lines || []).join("\n")}`;
 };
+
+window.pickPath = async ({ mode = "directory", startPath = "", title = "", allFiles = false } = {}) => {
+  let modal = document.getElementById("pathPickerModal");
+  if (!modal) {
+    const host = document.createElement("div");
+    host.innerHTML = `
+      <div id="pathPickerModal" class="pp-backdrop hidden">
+        <div class="pp-modal">
+          <div class="pp-head">
+            <strong id="ppTitle">选择路径</strong>
+            <button id="ppClose" type="button">关闭</button>
+          </div>
+          <div class="pp-toolbar">
+            <input id="ppPathInput" />
+            <button id="ppGo" type="button">进入</button>
+            <button id="ppUp" type="button">上级</button>
+          </div>
+          <div id="ppStatus" class="note">加载中...</div>
+          <div id="ppList" class="pp-list"></div>
+          <div class="pp-actions">
+            <button id="ppCancel" type="button">取消</button>
+            <button id="ppSelectDir" type="button">选择当前目录</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(host.firstElementChild);
+    modal = document.getElementById("pathPickerModal");
+  }
+
+  const $q = (id) => document.getElementById(id);
+  const titleEl = $q("ppTitle");
+  const statusEl = $q("ppStatus");
+  const listEl = $q("ppList");
+  const pathInput = $q("ppPathInput");
+  const btnSelectDir = $q("ppSelectDir");
+
+  titleEl.textContent = title || (mode === "file" ? "选择文件" : "选择目录");
+  btnSelectDir.style.display = mode === "directory" ? "inline-flex" : "none";
+
+  let current = startPath || "";
+  let parentPath = null;
+
+  const load = async (path) => {
+    const endpoint = allFiles || mode === "file" ? "/api/fs/list-all" : "/api/fs/list";
+    const q = path ? `?path=${encodeURIComponent(path)}&dirsOnly=${mode === "directory"}` : `?dirsOnly=${mode === "directory"}`;
+    const data = await window.api(`${endpoint}${q}`);
+    current = data.CurrentPath;
+    parentPath = data.ParentPath;
+    pathInput.value = current;
+    statusEl.textContent = `当前目录: ${current}`;
+    listEl.innerHTML = "";
+    (data.Entries || []).forEach((entry) => {
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "pp-row";
+      row.textContent = `${entry.IsDirectory ? "[D]" : "[F]"} ${entry.Name}`;
+      row.onclick = async () => {
+        if (entry.IsDirectory) {
+          await load(entry.Path);
+          return;
+        }
+        if (mode === "file") {
+          cleanup();
+          resolve(entry.Path);
+        }
+      };
+      listEl.appendChild(row);
+    });
+  };
+
+  let resolve;
+  let reject;
+  const promise = new Promise((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+
+  const onCancel = () => {
+    cleanup();
+    reject(new Error("Canceled"));
+  };
+  const onClose = onCancel;
+  const onGo = () => load(pathInput.value.trim()).catch((e) => { statusEl.textContent = String(e); });
+  const onUp = () => {
+    if (!parentPath) return;
+    load(parentPath).catch((e) => { statusEl.textContent = String(e); });
+  };
+  const onSelectDir = () => {
+    cleanup();
+    resolve(current);
+  };
+
+  const cleanup = () => {
+    modal.classList.add("hidden");
+    $q("ppCancel").removeEventListener("click", onCancel);
+    $q("ppClose").removeEventListener("click", onClose);
+    $q("ppGo").removeEventListener("click", onGo);
+    $q("ppUp").removeEventListener("click", onUp);
+    $q("ppSelectDir").removeEventListener("click", onSelectDir);
+  };
+
+  $q("ppCancel").addEventListener("click", onCancel);
+  $q("ppClose").addEventListener("click", onClose);
+  $q("ppGo").addEventListener("click", onGo);
+  $q("ppUp").addEventListener("click", onUp);
+  $q("ppSelectDir").addEventListener("click", onSelectDir);
+
+  modal.classList.remove("hidden");
+  await load(current);
+  return promise;
+};

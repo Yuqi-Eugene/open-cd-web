@@ -170,7 +170,7 @@ public sealed class OpenCdService
         return new ScalarsResponse(_pathService.ToRepoRelative(root), available, points.OrderBy(x => x.Step).ToList());
     }
 
-    public FsListResponse ListPath(string? path, bool directoriesOnly)
+    public FsListResponse ListPath(string? path, bool directoriesOnly, bool allFiles = false)
     {
         var target = string.IsNullOrWhiteSpace(path)
             ? _pathService.RepoRoot
@@ -189,7 +189,7 @@ public sealed class OpenCdService
                 Ext = Path.GetExtension(p)
             })
             .Where(x => x.IsDirectory || !directoriesOnly)
-            .Where(x => x.IsDirectory || ImageExts.Contains(x.Ext, StringComparer.OrdinalIgnoreCase))
+            .Where(x => x.IsDirectory || allFiles || ImageExts.Contains(x.Ext, StringComparer.OrdinalIgnoreCase))
             .OrderByDescending(x => x.IsDirectory)
             .ThenBy(x => Path.GetFileName(x.Full), StringComparer.OrdinalIgnoreCase)
             .Take(500)

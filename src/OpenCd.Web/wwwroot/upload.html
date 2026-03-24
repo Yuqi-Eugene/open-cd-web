@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>数据上传</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="title">
+        <h1>数据上传</h1>
+        <p>上传样本库数据或模型文件到服务器</p>
+      </div>
+      <nav class="nav">
+        <a data-page="home" href="/">首页</a>
+        <a data-page="upload" href="/upload.html">数据上传</a>
+        <a data-page="prep" href="/preprocess.html">样本预处理</a>
+        <a data-page="data" href="/dataset.html">样本可视化</a>
+        <a data-page="train" href="/training.html">训练验证测试</a>
+        <a data-page="infer" href="/interpret.html">样本解译</a>
+        <a data-page="docs" href="/docs.html">数据规范</a>
+      </nav>
+    </header>
+
+    <main class="grid">
+      <section class="card col-6">
+        <h2>样本数据上传</h2>
+        <label>上传类型
+          <select id="datasetTarget">
+            <option value="dataset">dataset</option>
+          </select>
+        </label>
+        <div class="row">
+          <label>选择文件（tif/png/zip等）
+            <input id="datasetFiles" type="file" multiple />
+          </label>
+          <label>选择文件夹
+            <input id="datasetFolder" type="file" webkitdirectory directory multiple />
+          </label>
+        </div>
+        <button id="uploadDataset" class="primary">上传样本数据</button>
+      </section>
+
+      <section class="card col-6">
+        <h2>模型上传</h2>
+        <label>上传类型
+          <select id="modelTarget">
+            <option value="model">model</option>
+          </select>
+        </label>
+        <label>选择模型文件（pth/zip等）
+          <input id="modelFiles" type="file" multiple />
+        </label>
+        <button id="uploadModel" class="primary">上传模型文件</button>
+      </section>
+
+      <section class="card col-12">
+        <h2>上传结果</h2>
+        <pre id="uploadLog" class="log">暂无上传任务</pre>
+      </section>
+    </main>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/upload.js"></script>
+</body>
+</html>

@@ -156,24 +156,19 @@ function waitImageLoaded(img) {
 
 async function chooseRootFolder() {
   try {
-    setStatus("正在打开 Finder 目录选择器...", false);
-    // Prefer the most compatible mode first.
-    let data;
-    try {
-      data = await api("/api/system/choose-directory?simple=true");
-    } catch {
-      const current = $("treeRoot").value?.trim() || "";
-      const q = current ? `?startPath=${encodeURIComponent(current)}` : "";
-      data = await api(`/api/system/choose-directory${q}`);
-    }
-
-    $("treeRoot").value = data.Path;
-    await loadTree(data.Path);
-    setStatus(`已选择目录: ${data.Path}`, false);
+    setStatus("打开目录索引...", false);
+    const current = $("treeRoot").value?.trim() || "";
+    const path = await pickPath({
+      mode: "directory",
+      startPath: current,
+      title: "选择样本目录"
+    });
+    $("treeRoot").value = path;
+    await loadTree(path);
+    setStatus(`已选择目录: ${path}`, false);
   } catch (err) {
     const msg = String(err);
     setStatus(msg, true);
-    window.alert(`Finder 打开失败:\\n${msg}`);
   }
 }
 

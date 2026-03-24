@@ -87,30 +87,28 @@ function waitImageLoaded(img) {
 }
 
 async function chooseFolder(inputId) {
-  let data;
-  try {
-    data = await api("/api/system/choose-directory?simple=true");
-  } catch {
-    const current = $(inputId).value?.trim() || "";
-    const q = current ? `?startPath=${encodeURIComponent(current)}` : "";
-    data = await api(`/api/system/choose-directory${q}`);
-  }
-  $(inputId).value = data.Path;
-  return data.Path;
+  const current = $(inputId).value?.trim() || "";
+  const path = await pickPath({
+    mode: "directory",
+    startPath: current,
+    title: "选择目录"
+  });
+  $(inputId).value = path;
+  return path;
 }
 
 async function chooseModelFile() {
   const current = $("modelPath").value?.trim();
-  let startPath = current;
-  if (!startPath) {
-    const health = await api("/api/health");
-    startPath = health.repoRoot;
-  }
-
-  const q = startPath ? `?startPath=${encodeURIComponent(startPath)}` : "";
-  const data = await api(`/api/system/choose-file${q}`);
-  $("modelPath").value = data.Path;
-  setTreeStatus(`已选择模型: ${data.Path.split("/").slice(-2).join("/")}`);
+  const health = await api("/api/health");
+  const startPath = current || health.repoRoot;
+  const path = await pickPath({
+    mode: "file",
+    startPath,
+    title: "选择模型文件（.pth）",
+    allFiles: true
+  });
+  $("modelPath").value = path;
+  setTreeStatus(`已选择模型: ${path.split("/").slice(-2).join("/")}`);
 }
 
 async function autoSelectBestModel() {

@@ -292,7 +292,12 @@ app.MapGet("/api/data/index", (string datasetRoot, OpenCdService service) =>
 
 app.MapGet("/api/fs/list", (string? path, bool? dirsOnly, OpenCdService service) =>
 {
-    return Results.Ok(service.ListPath(path, dirsOnly ?? false));
+    return Results.Ok(service.ListPath(path, dirsOnly ?? false, false));
+});
+
+app.MapGet("/api/fs/list-all", (string? path, bool? dirsOnly, OpenCdService service) =>
+{
+    return Results.Ok(service.ListPath(path, dirsOnly ?? false, true));
 });
 
 app.MapGet("/api/data/sample", (string datasetRoot, string split, string sample, OpenCdService service) =>
@@ -485,6 +490,80 @@ app.MapPost("/api/jobs/cancel-all", (JobRunnerService jobs) =>
 {
     var count = jobs.CancelAllRunningJobs();
     return Results.Ok(new { Canceled = count });
+});
+
+app.MapPost("/api/upload", async (HttpRequest request, PathService paths) =>
+{
+    if (!request.HasFormContentType)
+    {
+        return Results.BadRequest("Expected multipart/form-data.");
+    }
+
+    var form = await request.ReadFormAsync();
+    var files = form.Files;
+    if (files.Count == 0)
+    {
+        return Results.BadRequest("No files uploaded.");
+    }
+
+    var target = (form["target"].FirstOrDefault() ?? "dataset").Trim().ToLowerInvariant();
+    var rootRel = target == "model" ? "data/uploads/models" : "data/uploads/datasets";
+    var rootAbs = paths.ResolveInsideRepo(rootRel);
+    Directory.CreateDirectory(rootAbs);
+
+    var stamp = DateTimeOffset.UtcNow.ToString("yyyyMMdd_HHmmss");
+    var batchAbs = Path.Combine(rootAbs, stamp);
+    Directory.CreateDirectory(batchAbs);
+
+    static string SanitizeRelative(string raw)
+    {
+        var text = raw.Replace('\\', '/').TrimStart('/');
+        var parts = text.Split('/', StringSplitOptions.RemoveEmptyEntries)
+            .Where(p => p != "." && p != "..")
+            .Select(p => string.Concat(p.Where(c => c != '\0')))
+            .ToArray();
+        return string.Join('/', parts);
+    }
+
+    var saved = new List<string>();
+    foreach (var file in files)
+    {
+        if (file.Length <= 0) continue;
+
+        var rel = SanitizeRelative(file.FileName);
+        if (string.IsNullOrWhiteSpace(rel))
+        {
+            rel = Path.GetFileName(file.FileName);
+        }
+        if (string.IsNullOrWhiteSpace(rel))
+        {
+            continue;
+        }
+
+        var full = Path.GetFullPath(Path.Combine(batchAbs, rel));
+        if (!full.StartsWith(batchAbs, StringComparison.Ordinal))
+        {
+            continue;
+        }
+
+        var parent = Path.GetDirectoryName(full);
+        if (!string.IsNullOrWhiteSpace(parent))
+        {
+            Directory.CreateDirectory(parent);
+        }
+
+        await using var stream = File.Create(full);
+        await file.CopyToAsync(stream);
+        saved.Add(paths.ToRepoRelative(full));
+    }
+
+    return Results.Ok(new
+    {
+        Target = target,
+        Root = paths.ToRepoRelative(batchAbs),
+        Count = saved.Count,
+        Files = saved.Take(200).ToList()
+    });
 });
 
 app.MapPost("/api/preprocess/batch-name", (BatchRenameRequest req, PathService paths, JobRunnerService jobs) =>

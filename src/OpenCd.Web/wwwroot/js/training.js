@@ -7,15 +7,30 @@ const state = {
 
 async function loadConfigs() {
   const keyword = $("configSearch").value.trim();
-  const list = await api(`/api/opencd/configs?keyword=${encodeURIComponent(keyword)}`);
+  let list = await api(`/api/opencd/configs?keyword=${encodeURIComponent(keyword)}`);
+  if (keyword && (!list || list.length === 0)) {
+    const all = await api("/api/opencd/configs");
+    const key = keyword.toLowerCase();
+    list = (all || []).filter((x) => x.toLowerCase().includes(key));
+  }
   const sel = $("configSelect");
   sel.innerHTML = "";
+  if (!list || list.length === 0) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "未找到匹配配置";
+    sel.appendChild(opt);
+    setStatus("status", `未检索到匹配配置: ${keyword || "(空)"}`, true);
+    return;
+  }
   list.forEach((x) => {
     const opt = document.createElement("option");
     opt.value = x;
     opt.textContent = x;
     sel.appendChild(opt);
   });
+  sel.selectedIndex = 0;
+  setStatus("status", `已加载配置 ${list.length} 项`);
 }
 
 async function loadCheckpoints() {
@@ -79,19 +94,17 @@ async function validateDatasetRootForTask(task) {
 
 async function chooseDatasetRoot() {
   try {
-    setStatus("status", "正在打开 Finder 目录选择器...");
-    let data;
-    try {
-      data = await api("/api/system/choose-directory?simple=true");
-    } catch {
-      const current = $("datasetRoot").value?.trim() || "";
-      const q = current ? `?startPath=${encodeURIComponent(current)}` : "";
-      data = await api(`/api/system/choose-directory${q}`);
-    }
-    $("datasetRoot").value = data.Path;
-    setStatus("status", `已选择数据集目录: ${data.Path}`);
+    setStatus("status", "打开目录索引...");
+    const current = $("datasetRoot").value?.trim() || "";
+    const path = await pickPath({
+      mode: "directory",
+      startPath: current,
+      title: "选择数据集目录"
+    });
+    $("datasetRoot").value = path;
+    setStatus("status", `已选择数据集目录: ${path}`);
   } catch (e) {
-    setStatus("status", `打开 Finder 失败: ${String(e)}`, true);
+    setStatus("status", `目录选择失败: ${String(e)}`, true);
   }
 }
 

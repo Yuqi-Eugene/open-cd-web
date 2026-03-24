@@ -3,10 +3,13 @@ attachNav("prep");
 async function chooseDirectory(targetInputId) {
   try {
     const current = $(targetInputId).value?.trim() || "";
-    const q = current ? `?startPath=${encodeURIComponent(current)}` : "";
-    const data = await api(`/api/system/choose-directory${q}`);
-    $(targetInputId).value = data.Path;
-    setStatus("status", `已选择目录: ${data.Path}`);
+    const path = await pickPath({
+      mode: "directory",
+      startPath: current,
+      title: "选择目录"
+    });
+    $(targetInputId).value = path;
+    setStatus("status", `已选择目录: ${path}`);
   } catch (e) {
     setStatus("status", String(e), true);
   }
@@ -15,10 +18,14 @@ async function chooseDirectory(targetInputId) {
 async function chooseFile(targetInputId) {
   try {
     const current = $(targetInputId).value?.trim() || "";
-    const q = current ? `?startPath=${encodeURIComponent(current)}` : "";
-    const data = await api(`/api/system/choose-file${q}`);
-    $(targetInputId).value = data.Path;
-    setStatus("status", `已选择文件: ${data.Path}`);
+    const path = await pickPath({
+      mode: "file",
+      startPath: current,
+      title: "选择文件",
+      allFiles: true
+    });
+    $(targetInputId).value = path;
+    setStatus("status", `已选择文件: ${path}`);
   } catch (e) {
     setStatus("status", String(e), true);
   }
