@@ -94,14 +94,16 @@
 
       <section class="card col-6">
         <h2>任务日志</h2>
-        <label>Job ID<input id="jobId" placeholder="点击下方任务可自动填充" /></label>
+        <div class="tr-job-row">
+          <label for="jobId">Job ID</label>
+          <input id="jobId" placeholder="点击下方任务标签可自动填充" />
+        </div>
         <div class="row">
           <button id="refreshJobs">刷新任务</button>
           <button class="success" id="viewLog">查看日志</button>
         </div>
         <div id="jobChips" class="chips"></div>
         <pre id="jobLog" class="log">暂无日志</pre>
-        <p id="status" class="note">就绪</p>
       </section>
     </main>
   </div>

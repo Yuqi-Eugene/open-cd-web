@@ -840,8 +840,9 @@ app.MapPost("/api/opencd/train", (TrainRequest req, PathService paths, JobRunner
     var script = paths.ResolveInsideRepo("tools/train.py");
     var python = paths.ResolveOpenCdPython(req.Python);
     var env = BuildOpenCdEnv();
+    var supportsAmp = paths.SupportsAmpTraining(python);
 
-    if (req.Amp && !paths.SupportsAmpTraining(python))
+    if (req.Amp && !supportsAmp)
     {
         return Results.BadRequest("当前 Python 环境未检测到可用 GPU/NPU/MLU/MUSA，无法启用 AMP。请取消勾选 AMP 后重试。");
     }
@@ -856,8 +857,8 @@ app.MapPost("/api/opencd/train", (TrainRequest req, PathService paths, JobRunner
     if (req.Amp) args.Add("--amp");
     AddOption(args, "--resume", req.ResumeFrom is null ? null : paths.ResolveInsideRepo(req.ResumeFrom));
     AddDatasetRootCfgOptions(args, paths, req.DatasetRoot);
-    AddDefaultTrainLogInterval(args, req.ExtraArgs, 10);
-    AddMacCpuStabilityCfgOptions(args, req.ExtraArgs);
+    AddDefaultTrainLogInterval(args, req.ExtraArgs, 5);
+    AddCpuStabilityCfgOptions(args, req.ExtraArgs, supportsAmp);
     args.AddRange(SplitArgs(req.ExtraArgs));
 
     var job = jobs.StartJob("opencd.train", python, args, paths.RepoRoot, env);
@@ -884,7 +885,7 @@ app.MapPost("/api/opencd/test", (EvalRequest req, PathService paths, JobRunnerSe
     }
 
     AddDatasetRootCfgOptions(args, paths, req.DatasetRoot);
-    AddDefaultTrainLogInterval(args, req.ExtraArgs, 20);
+    AddDefaultTrainLogInterval(args, req.ExtraArgs, 5);
     args.AddRange(SplitArgs(req.ExtraArgs));
 
     var python = paths.ResolveOpenCdPython(req.Python);
@@ -905,7 +906,7 @@ app.MapPost("/api/opencd/validate", (EvalRequest req, PathService paths, JobRunn
 
     AddOption(args, "--work-dir", req.WorkDir is null ? null : paths.ResolveInsideRepo(req.WorkDir));
     AddDatasetRootCfgOptions(args, paths, req.DatasetRoot);
-    AddDefaultTrainLogInterval(args, req.ExtraArgs, 20);
+    AddDefaultTrainLogInterval(args, req.ExtraArgs, 5);
     args.AddRange(SplitArgs(req.ExtraArgs));
 
     var python = paths.ResolveOpenCdPython(req.Python);
@@ -960,9 +961,11 @@ static void AddDefaultTrainLogInterval(ICollection<string> args, string? extraAr
     args.Add($"default_hooks.logger.interval={defaultInterval}");
 }
 
-static void AddMacCpuStabilityCfgOptions(ICollection<string> args, string? extraArgs)
+static void AddCpuStabilityCfgOptions(ICollection<string> args, string? extraArgs, bool supportsAmp)
 {
-    if (!OperatingSystem.IsMacOS())
+    // CPU / non-accelerated training on small cloud instances is prone to stalls/OOM.
+    // Apply conservative dataloader defaults unless user already overrides in extra args.
+    if (supportsAmp)
     {
         return;
     }
@@ -979,8 +982,7 @@ static void AddMacCpuStabilityCfgOptions(ICollection<string> args, string? extra
         args.Add($"{key}={value}");
     }
 
-    // macOS + CPU 下 r18 类配置更容易触发底层崩溃（ExitCode 138 / SIGBUS），
-    // 默认使用更保守的多进程与 batch 设置。
+    // CPU 默认使用更保守的多进程与 batch 设置，优先保证稳定性。
     AddCfgIfMissing("env_cfg.mp_cfg.mp_start_method", "spawn");
     AddCfgIfMissing("train_dataloader.num_workers", "0");
     AddCfgIfMissing("val_dataloader.num_workers", "0");
@@ -989,6 +991,8 @@ static void AddMacCpuStabilityCfgOptions(ICollection<string> args, string? extra
     AddCfgIfMissing("val_dataloader.persistent_workers", "False");
     AddCfgIfMissing("test_dataloader.persistent_workers", "False");
     AddCfgIfMissing("train_dataloader.batch_size", "1");
+    AddCfgIfMissing("val_dataloader.batch_size", "1");
+    AddCfgIfMissing("test_dataloader.batch_size", "1");
     AddCfgIfMissing("train_dataloader.dataset.serialize_data", "False");
     AddCfgIfMissing("val_dataloader.dataset.serialize_data", "False");
     AddCfgIfMissing("test_dataloader.dataset.serialize_data", "False");

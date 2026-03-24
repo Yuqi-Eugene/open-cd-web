@@ -133,21 +133,47 @@
 
 .tr-log-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 132px)) minmax(180px, 1fr);
   gap: 8px;
-  max-width: 560px;
+  max-width: 780px;
+  align-items: center;
   margin-bottom: 4px;
 }
 
+.tr-checkline-inline {
+  margin-top: 0;
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0 10px;
+  background: var(--surface-2);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.tr-job-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.tr-job-row label {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
 #jobChips {
-  margin: 3px 0 6px;
-  max-height: 64px;
+  margin: 6px 0 8px;
+  max-height: 92px;
   overflow: auto;
 }
 
 #jobLog {
-  min-height: clamp(170px, 24vh, 300px);
-  max-height: 40vh;
+  min-height: clamp(128px, 18vh, 220px);
+  max-height: 30vh;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -192,7 +218,7 @@
   }
 
   .tr-log-actions {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: 1fr 1fr;
   }
 
   .tr-checkline {

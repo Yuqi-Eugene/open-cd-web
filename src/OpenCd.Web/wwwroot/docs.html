@@ -23,27 +23,61 @@
     </header>
 
     <main class="grid">
-      <section class="card col-12">
-        <h2>目录结构</h2>
+      <section class="card col-7">
+        <h2>1. 标准目录结构</h2>
         <pre class="note">dataset_root/
-  train/{A,B,label}
-  val/{A,B,label}
-  test/{A,B,label}</pre>
-        <h3>命名与配对</h3>
-        <p>同名严格对齐，A/B/label 必须都存在，例如：<code>000123.tif</code>。</p>
-        <h3>图像尺寸</h3>
-        <p>建议裁块为 256x256 或 512x512；单次实验内保持一致。</p>
-        <h3>存储格式</h3>
-        <p>推荐 <code>tif/tiff/png</code>。训练前建议统一为 <code>uint8</code>。</p>
-        <h3>nodata 约束</h3>
-        <p>支持 nodata。建议预处理统一映射到 0 或 255，并在模型配置同步 <code>ignore_index</code>。</p>
-        <h3>流程建议</h3>
-        <ol>
-          <li>批量命名校正。</li>
-          <li>uint8 转换与 nodata 处理。</li>
-          <li>自动切分 train/val/test。</li>
-          <li>训练、验证、测试并查看指标曲线。</li>
-        </ol>
+  train/
+    A/
+    B/
+    label/
+  val/
+    A/
+    B/
+    label/
+  test/
+    A/
+    B/
+    label/</pre>
+        <p>每个 split 都必须同时包含 <code>A</code>、<code>B</code>、<code>label</code> 三个子目录。</p>
+
+        <h2>2. 命名与配对规则</h2>
+        <p>同名一一对应：<code>A/000123.png</code>、<code>B/000123.png</code>、<code>label/000123.png</code>。</p>
+        <p>推荐只使用文件名本体，不要额外前缀（如 <code>test_</code>），便于预测与标签自动配对。</p>
+
+        <h2>3. 尺寸与类型要求</h2>
+        <p>单次实验内尺寸尽量一致（常见：<code>256x256</code>、<code>512x512</code>、<code>1024x1024</code>）。</p>
+        <p>图像格式建议统一为 <code>.tif/.tiff/.png</code>；若混用格式，训练前建议先批处理统一。</p>
+      </section>
+
+      <section class="card col-5">
+        <h2>4. Label 规范</h2>
+        <div class="note">
+          <div><strong>二分类推荐：</strong>背景=0，变化=1</div>
+          <div><strong>像素类型：</strong>建议单通道，uint8</div>
+          <div><strong>避免问题：</strong>不要使用彩色 RGB 掩膜作为训练标签</div>
+        </div>
+
+        <h2>5. nodata 处理建议</h2>
+        <div class="note">
+          <div>预处理阶段将 nodata 统一映射为固定值（常用 0）。</div>
+          <div>训练配置中确认 <code>ignore_index</code> 与标签语义一致。</div>
+          <div>同一数据集内不要混用多种 nodata 编码。</div>
+        </div>
+
+        <h2>6. 上线前快速检查</h2>
+        <div class="note">
+          <div>1. A/B/label 文件数量一致。</div>
+          <div>2. 随机抽检 20 对样本，确认错位与空图问题。</div>
+          <div>3. 先跑短训（小迭代）确认环境和日志正常。</div>
+          <div>4. 再跑正式训练与测试。</div>
+        </div>
+      </section>
+
+      <section class="card col-12">
+        <h2>推荐流程（平台内）</h2>
+        <div class="note">
+          <div>数据上传 → 样本预处理（批量命名 / uint8 / nodata / 切分） → 样本可视化抽检 → 训练验证测试 → 样本解译（GT vs Pred）</div>
+        </div>
       </section>
     </main>
   </div>

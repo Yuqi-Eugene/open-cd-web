@@ -61,14 +61,17 @@ function renderVectors(vectors) {
 }
 
 function updateCompare() {
-  const v = Number($("compareSlider").value);
+  const slider = $("compareSlider");
+  const v = Math.max(0, Math.min(100, Number(slider.value)));
+  slider.value = String(v);
   state.comparePercent = v;
   $("imgB").style.clipPath = `inset(0 0 0 ${v}%)`;
 
   const line = $("compareLine");
   const rect = state.viewRect;
   if (rect) {
-    line.style.left = `${rect.left + (rect.width * v) / 100}px`;
+    const x = Math.max(rect.left, Math.min(rect.left + rect.width, rect.left + (rect.width * v) / 100));
+    line.style.left = `${x}px`;
     line.style.top = `${rect.top}px`;
     line.style.height = `${rect.height}px`;
     line.style.bottom = "auto";

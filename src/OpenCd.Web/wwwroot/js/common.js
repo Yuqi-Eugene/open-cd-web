@@ -93,11 +93,14 @@ window.renderJobs = async (chipsId) => {
     3: "Failed",
     4: "Canceled"
   };
+  const formatType = (type) => String(type || "")
+    .replace(/^opencd\./i, "")
+    .replace(/^preprocess\./i, "prep.");
   jobs.slice(0, 20).forEach((j) => {
     const btn = document.createElement("button");
     btn.className = "chip";
     const s = statusMap[j.Status] ?? String(j.Status);
-    btn.textContent = `${j.Type} | ${s} | ${j.Id.slice(0, 8)}`;
+    btn.textContent = `${formatType(j.Type)} | ${s} | ${String(j.Id || "").slice(-2)}`;
     btn.onclick = () => {
       const input = document.querySelector("#jobId");
       if (input) input.value = j.Id;
@@ -126,7 +129,9 @@ window.loadLog = async (jobIdInputId, logId) => {
     `ExitCode: ${job.ExitCode ?? "-"}`,
     `Error: ${job.Error || "-"}`
   ].join("\n");
-  $(logId).textContent = `${header}\n\n${(data.Lines || []).join("\n")}`;
+  const logEl = $(logId);
+  logEl.textContent = `${header}\n\n${(data.Lines || []).join("\n")}`;
+  logEl.scrollTop = logEl.scrollHeight;
 };
 
 window.pickPath = async ({ mode = "directory", startPath = "", title = "", allFiles = false } = {}) => {

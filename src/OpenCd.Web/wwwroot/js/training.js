@@ -78,7 +78,9 @@ async function loadTrainingLog() {
     `View: ${compact ? "关键日志" : "完整日志"}`
   ].join("\n");
 
-  $("jobLog").textContent = `${header}\n\n${bodyLines.join("\n")}`;
+  const logEl = $("jobLog");
+  logEl.textContent = `${header}\n\n${bodyLines.join("\n")}`;
+  logEl.scrollTop = logEl.scrollHeight;
 }
 
 async function loadConfigs() {

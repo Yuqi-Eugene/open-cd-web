@@ -158,6 +158,13 @@
   margin-bottom: 4px;
 }
 
+#compareSlider {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  display: block;
+}
+
 .ds-viewer-body {
   position: relative;
   display: grid;
