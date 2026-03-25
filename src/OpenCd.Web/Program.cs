@@ -60,6 +60,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("AdminOnly", policy => policy.RequireRole("admin"))
     .SetFallbackPolicy(new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
         .Build());
@@ -67,6 +68,7 @@ builder.Services.AddAuthorizationBuilder()
 builder.Services.AddSingleton<PathService>();
 builder.Services.AddSingleton<JobRunnerService>();
 builder.Services.AddSingleton<OpenCdService>();
+builder.Services.AddSingleton<SystemMetricsService>();
 
 var app = builder.Build();
 
@@ -81,6 +83,11 @@ app.MapGet("/api/health", (PathService paths) => new
     repoRoot = paths.RepoRoot,
     serverTime = DateTimeOffset.Now
 }).AllowAnonymous();
+
+app.MapGet("/api/system/metrics", (SystemMetricsService metrics) =>
+{
+    return Results.Ok(metrics.GetSnapshot());
+});
 
 app.MapPost("/api/auth/login", (LoginRequest req) =>
 {
@@ -664,13 +671,13 @@ app.MapPost("/api/jobs/{id}/cancel", (string id, JobRunnerService jobs) =>
     return jobs.CancelJob(id)
         ? Results.Ok(new { Message = "Job canceled.", JobId = id })
         : Results.Problem("Failed to cancel job.");
-});
+}).RequireAuthorization("AdminOnly");
 
 app.MapPost("/api/jobs/cancel-all", (JobRunnerService jobs) =>
 {
     var count = jobs.CancelAllRunningJobs();
     return Results.Ok(new { Canceled = count });
-});
+}).RequireAuthorization("AdminOnly");
 
 app.MapPost("/api/upload", async (HttpRequest request, PathService paths) =>
 {
@@ -863,7 +870,7 @@ app.MapPost("/api/opencd/train", (TrainRequest req, PathService paths, JobRunner
 
     var job = jobs.StartJob("opencd.train", python, args, paths.RepoRoot, env);
     return Results.Ok(job);
-});
+}).RequireAuthorization("AdminOnly");
 
 app.MapPost("/api/opencd/test", (EvalRequest req, PathService paths, JobRunnerService jobs) =>
 {
@@ -891,7 +898,7 @@ app.MapPost("/api/opencd/test", (EvalRequest req, PathService paths, JobRunnerSe
     var python = paths.ResolveOpenCdPython(req.Python);
     var job = jobs.StartJob("opencd.test", python, args, paths.RepoRoot, env);
     return Results.Ok(job);
-});
+}).RequireAuthorization("AdminOnly");
 
 app.MapPost("/api/opencd/validate", (EvalRequest req, PathService paths, JobRunnerService jobs) =>
 {
@@ -912,7 +919,7 @@ app.MapPost("/api/opencd/validate", (EvalRequest req, PathService paths, JobRunn
     var python = paths.ResolveOpenCdPython(req.Python);
     var job = jobs.StartJob("opencd.validate", python, args, paths.RepoRoot, env);
     return Results.Ok(job);
-});
+}).RequireAuthorization("AdminOnly");
 
 app.Run();
 

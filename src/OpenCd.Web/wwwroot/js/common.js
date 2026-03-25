@@ -1,6 +1,21 @@
 window.$ = (id) => document.getElementById(id);
 
 window.getAuthToken = () => sessionStorage.getItem("ocd_token") || "";
+window.getCurrentUser = () => {
+  try {
+    const raw = sessionStorage.getItem("ocd_user");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+window.setCurrentUser = (user) => {
+  if (!user) {
+    sessionStorage.removeItem("ocd_user");
+    return;
+  }
+  sessionStorage.setItem("ocd_user", JSON.stringify(user));
+};
 window.setAuthToken = (token) => {
   sessionStorage.setItem("ocd_token", token || "");
   // cleanup old persistent token from previous versions
@@ -8,6 +23,7 @@ window.setAuthToken = (token) => {
 };
 window.clearAuthToken = () => {
   sessionStorage.removeItem("ocd_token");
+  sessionStorage.removeItem("ocd_user");
   localStorage.removeItem("ocd_token");
 };
 
@@ -58,7 +74,8 @@ window.requireAuth = async () => {
     return;
   }
   try {
-    await window.api("/api/auth/me");
+    const me = await window.api("/api/auth/me");
+    window.setCurrentUser(me);
   } catch {
     window.clearAuthToken();
     location.href = "/login.html";
@@ -81,10 +98,14 @@ window.attachNav = (activePage) => {
   });
 };
 
-window.renderJobs = async (chipsId) => {
+window.renderJobs = async (chipsId, options = {}) => {
   const jobs = await api("/api/jobs");
+  const typePrefix = (options?.typePrefix || "").trim();
+  const scopedJobs = typePrefix
+    ? (jobs || []).filter((j) => String(j?.Type || "").startsWith(typePrefix))
+    : (jobs || []);
   const wrap = $(chipsId);
-  if (!wrap) return jobs;
+  if (!wrap) return scopedJobs;
   wrap.innerHTML = "";
   const statusMap = {
     0: "Pending",
@@ -96,10 +117,13 @@ window.renderJobs = async (chipsId) => {
   const formatType = (type) => String(type || "")
     .replace(/^opencd\./i, "")
     .replace(/^preprocess\./i, "prep.");
-  jobs.slice(0, 20).forEach((j) => {
+  scopedJobs.slice(0, 20).forEach((j) => {
     const btn = document.createElement("button");
-    btn.className = "chip";
+    btn.className = "chip job-chip";
     const s = statusMap[j.Status] ?? String(j.Status);
+    if (j.Status === 1) {
+      btn.classList.add("running");
+    }
     btn.textContent = `${formatType(j.Type)} | ${s} | ${String(j.Id || "").slice(-2)}`;
     btn.onclick = () => {
       const input = document.querySelector("#jobId");
@@ -107,7 +131,7 @@ window.renderJobs = async (chipsId) => {
     };
     wrap.appendChild(btn);
   });
-  return jobs;
+  return scopedJobs;
 };
 
 window.loadLog = async (jobIdInputId, logId) => {

@@ -99,7 +99,7 @@ async function submit(url, body, message) {
     const res = await postJson(url, body);
     setStatus("status", `${message}，JobId: ${res.Id}`);
     $("jobId").value = res.Id;
-    await renderJobs("jobChips");
+    await renderJobs("jobChips", { typePrefix: "preprocess." });
     await loadLog("jobId", "jobLog");
   } catch (e) {
     setStatus("status", String(e), true);
@@ -141,7 +141,7 @@ $("runSplit").onclick = () => submit("/api/preprocess/split", {
 }, "切分任务已提交");
 
 $("refreshJobs").onclick = async () => {
-  await renderJobs("jobChips");
+  await renderJobs("jobChips", { typePrefix: "preprocess." });
   setStatus("status", "任务列表已刷新");
 };
 
@@ -178,8 +178,8 @@ $("uint8In").addEventListener("change", (ev) => {
 })();
 
 detectPython(false).catch(() => {});
-renderJobs("jobChips").catch((e) => setStatus("status", String(e), true));
+renderJobs("jobChips", { typePrefix: "preprocess." }).catch((e) => setStatus("status", String(e), true));
 setInterval(() => {
-  renderJobs("jobChips").catch(() => {});
+  renderJobs("jobChips", { typePrefix: "preprocess." }).catch(() => {});
   if ($("jobId").value.trim()) loadLog("jobId", "jobLog").catch(() => {});
 }, 5000);

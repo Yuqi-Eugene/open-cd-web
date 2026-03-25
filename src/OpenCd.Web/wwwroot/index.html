@@ -30,6 +30,28 @@
           <h2>功能入口</h2>
           <p>选择一个工作模块继续</p>
         </header>
+        <section class="home-metric-strip" aria-label="服务器实时状态">
+          <div class="metric-pill">
+            <span class="metric-name">CPU</span>
+            <strong id="cpuNow">--</strong>
+            <em id="cpuTrend">→</em>
+          </div>
+          <div class="metric-pill">
+            <span class="metric-name">内存</span>
+            <strong id="memNow">--</strong>
+            <em id="memTrend">→</em>
+          </div>
+          <div class="metric-pill">
+            <span class="metric-name">入站</span>
+            <strong id="rxNow">--</strong>
+            <em id="rxTrend">→</em>
+          </div>
+          <div class="metric-pill">
+            <span class="metric-name">出站</span>
+            <strong id="txNow">--</strong>
+            <em id="txTrend">→</em>
+          </div>
+        </section>
         <div class="home-entry-grid">
           <a class="home-entry" href="/upload.html">
             <strong>数据上传</strong>
@@ -61,8 +83,6 @@
   </div>
 
   <script src="/js/common.js"></script>
-  <script>
-    attachNav("home");
-  </script>
+  <script src="/js/home.js"></script>
 </body>
 </html>

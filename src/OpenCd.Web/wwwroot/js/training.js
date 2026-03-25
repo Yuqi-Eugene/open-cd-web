@@ -5,6 +5,88 @@ const state = {
   selectedMetrics: new Set(["loss", "decode.acc_seg"])
 };
 const LAST_JOB_KEY = "opencd.train.lastJobId";
+const TRAIN_FORM_KEY = "opencd.train.formState.v1";
+
+async function applyRolePermissions() {
+  let me = window.getCurrentUser?.();
+  if (!me || !me.Role) {
+    try {
+      me = await api("/api/auth/me");
+      window.setCurrentUser?.(me);
+    } catch {
+      return;
+    }
+  }
+
+  const isAdmin = String(me.Role || "").toLowerCase() === "admin";
+  const restrictedIds = ["runTrain", "runVal", "runTest", "cancelJob"];
+  restrictedIds.forEach((id) => {
+    const btn = $(id);
+    if (!btn) return;
+    btn.disabled = !isAdmin;
+    if (!isAdmin) {
+      btn.title = "内测权限不可执行该操作";
+    } else {
+      btn.title = "";
+    }
+  });
+
+  if (!isAdmin) {
+    setStatus("status", "当前为内测权限：不可执行训练/验证/测试/停止任务。");
+  }
+}
+
+function loadSavedFormState() {
+  try {
+    const raw = localStorage.getItem(TRAIN_FORM_KEY);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    return obj && typeof obj === "object" ? obj : null;
+  } catch {
+    return null;
+  }
+}
+
+function collectFormState() {
+  return {
+    ConfigSearch: $("configSearch")?.value || "",
+    ConfigPath: $("configSelect")?.value || "",
+    CheckpointPath: $("ckptSelect")?.value || "",
+    WorkDir: $("workDir")?.value || "",
+    ResumeFrom: $("resumeFrom")?.value || "",
+    ExtraArgs: $("extraArgs")?.value || "",
+    DatasetRoot: $("datasetRoot")?.value || "",
+    TestOut: $("testOut")?.value || "",
+    MetricsWorkDir: $("metricsWorkDir")?.value || "",
+    Amp: !!$("amp")?.checked,
+    CompactLog: !!$("compactLog")?.checked,
+    SelectedMetrics: [...state.selectedMetrics]
+  };
+}
+
+function saveFormState() {
+  try {
+    localStorage.setItem(TRAIN_FORM_KEY, JSON.stringify(collectFormState()));
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function applySavedPlainFields(saved) {
+  if (!saved) return;
+  if (typeof saved.ConfigSearch === "string") $("configSearch").value = saved.ConfigSearch;
+  if (typeof saved.WorkDir === "string") $("workDir").value = saved.WorkDir;
+  if (typeof saved.ResumeFrom === "string") $("resumeFrom").value = saved.ResumeFrom;
+  if (typeof saved.ExtraArgs === "string") $("extraArgs").value = saved.ExtraArgs;
+  if (typeof saved.DatasetRoot === "string") $("datasetRoot").value = saved.DatasetRoot;
+  if (typeof saved.TestOut === "string") $("testOut").value = saved.TestOut;
+  if (typeof saved.MetricsWorkDir === "string") $("metricsWorkDir").value = saved.MetricsWorkDir;
+  if (typeof saved.Amp === "boolean") $("amp").checked = saved.Amp;
+  if (typeof saved.CompactLog === "boolean") $("compactLog").checked = saved.CompactLog;
+  if (Array.isArray(saved.SelectedMetrics) && saved.SelectedMetrics.length) {
+    state.selectedMetrics = new Set(saved.SelectedMetrics.map(String));
+  }
+}
 
 function rememberJobId(id) {
   if (!id) return;
@@ -84,6 +166,7 @@ async function loadTrainingLog() {
 }
 
 async function loadConfigs() {
+  const saved = loadSavedFormState();
   const keyword = $("configSearch").value.trim();
   let list = await api(`/api/opencd/configs?keyword=${encodeURIComponent(keyword)}`);
   if (keyword && (!list || list.length === 0)) {
@@ -107,11 +190,18 @@ async function loadConfigs() {
     opt.textContent = x;
     sel.appendChild(opt);
   });
-  sel.selectedIndex = 0;
+  const preferred = (saved?.ConfigPath || "").trim();
+  if (preferred && list.includes(preferred)) {
+    sel.value = preferred;
+  } else {
+    sel.selectedIndex = 0;
+  }
+  saveFormState();
   setStatus("status", `已加载配置 ${list.length} 项`);
 }
 
 async function loadCheckpoints() {
+  const saved = loadSavedFormState();
   const list = await api("/api/opencd/checkpoints");
   const sel = $("ckptSelect");
   sel.innerHTML = "";
@@ -128,15 +218,21 @@ async function loadCheckpoints() {
     opt.textContent = x;
     sel.appendChild(opt);
   });
+  const preferred = (saved?.CheckpointPath || "").trim();
+  if (preferred && list.includes(preferred)) {
+    sel.value = preferred;
+  }
+  saveFormState();
 }
 
 async function submit(url, body, msg) {
   try {
+    saveFormState();
     const res = await postJson(url, body);
     $("jobId").value = res.Id;
     rememberJobId(res.Id);
     setStatus("status", `${msg}，JobId: ${res.Id}`);
-    await renderJobs("jobChips");
+    await renderJobs("jobChips", { typePrefix: "opencd." });
     await loadTrainingLog();
   } catch (e) {
     setStatus("status", String(e), true);
@@ -312,12 +408,14 @@ async function loadScalars() {
     chip.onclick = () => {
       if (state.selectedMetrics.has(m)) state.selectedMetrics.delete(m);
       else state.selectedMetrics.add(m);
+      saveFormState();
       loadScalars().catch(console.error);
     };
     wrap.appendChild(chip);
   });
 
   drawChart();
+  saveFormState();
 }
 
 async function importParams(file) {
@@ -336,7 +434,7 @@ async function importParams(file) {
 $("loadConfigs").onclick = () => loadConfigs().catch((e) => setStatus("status", String(e), true));
 $("loadCheckpoints").onclick = () => loadCheckpoints().catch((e) => setStatus("status", String(e), true));
 $("browseDatasetRoot").onclick = () => chooseDatasetRoot().catch((e) => setStatus("status", String(e), true));
-$("refreshJobs").onclick = () => renderJobs("jobChips").catch((e) => setStatus("status", String(e), true));
+$("refreshJobs").onclick = () => renderJobs("jobChips", { typePrefix: "opencd." }).catch((e) => setStatus("status", String(e), true));
 $("viewLog").onclick = () => loadTrainingLog().catch((e) => setStatus("status", String(e), true));
 $("cancelJob").onclick = async () => {
   const id = $("jobId").value.trim();
@@ -347,7 +445,7 @@ $("cancelJob").onclick = async () => {
   try {
     await api(`/api/jobs/${encodeURIComponent(id)}/cancel`, { method: "POST" });
     setStatus("status", `已请求停止任务: ${id}`);
-    await renderJobs("jobChips");
+    await renderJobs("jobChips", { typePrefix: "opencd." });
     await loadTrainingLog();
   } catch (e) {
     setStatus("status", `停止任务失败: ${String(e)}`, true);
@@ -411,6 +509,7 @@ $("importParams").onchange = async (e) => {
   if (!f) return;
   try {
     await importParams(f);
+    saveFormState();
     setStatus("status", "参数导入成功");
   } catch (err) {
     setStatus("status", String(err), true);
@@ -420,18 +519,40 @@ $("importParams").onchange = async (e) => {
 $("jobId").addEventListener("change", () => {
   const id = $("jobId").value.trim();
   if (id) rememberJobId(id);
+  saveFormState();
 });
 $("compactLog").addEventListener("change", () => {
+  saveFormState();
   if ($("jobId").value.trim()) {
     loadTrainingLog().catch(() => {});
   }
 });
 
+[
+  "configSearch",
+  "configSelect",
+  "ckptSelect",
+  "workDir",
+  "resumeFrom",
+  "extraArgs",
+  "datasetRoot",
+  "testOut",
+  "metricsWorkDir",
+  "amp"
+].forEach((id) => {
+  const el = $(id);
+  if (!el) return;
+  const evt = el.tagName === "SELECT" || el.type === "checkbox" ? "change" : "input";
+  el.addEventListener(evt, saveFormState);
+});
+
 (async () => {
   try {
+    await applyRolePermissions();
+    applySavedPlainFields(loadSavedFormState());
     await loadConfigs();
     await loadCheckpoints();
-    const jobs = await renderJobs("jobChips");
+    const jobs = await renderJobs("jobChips", { typePrefix: "opencd." });
     await restoreJobContext(jobs);
     await loadScalars();
   } catch (e) {
@@ -440,7 +561,7 @@ $("compactLog").addEventListener("change", () => {
 })();
 
 setInterval(() => {
-  renderJobs("jobChips")
+  renderJobs("jobChips", { typePrefix: "opencd." })
     .then((jobs) => {
       if (!$("jobId").value.trim()) {
         const running = pickRunningTrainJob(jobs);

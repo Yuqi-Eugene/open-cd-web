@@ -16,6 +16,7 @@ async function handleAdminLogin() {
 
     const res = await postJson("/api/auth/login", { Username: username, Password: password });
     window.setAuthToken(res.Token);
+    window.setCurrentUser({ Username: res.Username, Role: res.Role });
     setLoginStatus("登录成功，正在跳转...");
     location.href = "/";
   } catch (e) {
@@ -27,6 +28,7 @@ async function handleInternalLogin() {
   try {
     const res = await postJson("/api/auth/internal-login", {});
     window.setAuthToken(res.Token);
+    window.setCurrentUser({ Username: res.Username, Role: res.Role });
     setLoginStatus("内测登录成功，正在跳转...");
     location.href = "/";
   } catch (e) {
