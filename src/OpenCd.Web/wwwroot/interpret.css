@@ -90,8 +90,8 @@
 }
 
 .ip-tree .tree-node.selected {
-  border-color: #a8b2c3;
-  background: #eef2f7;
+  border: 0;
+  background: #e6ebf1;
 }
 
 .ip-layer-list {

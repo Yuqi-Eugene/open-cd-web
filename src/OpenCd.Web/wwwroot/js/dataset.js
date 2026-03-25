@@ -225,7 +225,8 @@ function buildNode(entry) {
 
   const btn = document.createElement("button");
   btn.className = "tree-node";
-  btn.textContent = entry.IsDirectory ? `[D] ${entry.Name}` : `[F] ${entry.Name}`;
+  btn.classList.add(entry.IsDirectory ? "dir" : "file");
+  btn.textContent = entry.Name;
   li.appendChild(btn);
 
   if (entry.IsDirectory) {
@@ -273,7 +274,7 @@ async function loadTree(path) {
     const liUp = document.createElement("li");
     liUp.className = "tree-li";
     const upBtn = document.createElement("button");
-    upBtn.className = "tree-node";
+    upBtn.className = "tree-node up";
     upBtn.textContent = "..";
     upBtn.onclick = () => loadTree(data.ParentPath).catch((err) => setStatus(String(err), true));
     liUp.appendChild(upBtn);
@@ -281,7 +282,7 @@ async function loadTree(path) {
   }
 
   data.Entries.forEach((entry) => list.appendChild(buildNode(entry)));
-  setStatus("目录已加载，点击 [F] 文件进入 Viewer。", false);
+  setStatus("目录已加载，点击文件进入 Viewer。", false);
 }
 
 $("browseRoot").onclick = chooseRootFolder;

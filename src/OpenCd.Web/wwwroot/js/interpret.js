@@ -203,8 +203,9 @@ function buildNode(entry) {
 
   const btn = document.createElement("button");
   btn.className = "tree-node";
+  btn.classList.add(entry.IsDirectory ? "dir" : "file");
   const displayName = entry.IsDirectory ? entry.Name : normalizeDisplayName(entry.Name);
-  btn.textContent = entry.IsDirectory ? `[D] ${displayName}` : `[F] ${displayName}`;
+  btn.textContent = displayName;
   li.appendChild(btn);
 
   if (entry.IsDirectory) {
@@ -251,7 +252,7 @@ async function loadTree(path) {
     const liUp = document.createElement("li");
     liUp.className = "tree-li";
     const upBtn = document.createElement("button");
-    upBtn.className = "tree-node";
+    upBtn.className = "tree-node up";
     upBtn.textContent = "..";
     upBtn.onclick = () => loadTree(data.ParentPath).catch((err) => setTreeStatus(String(err), true));
     liUp.appendChild(upBtn);
@@ -259,7 +260,7 @@ async function loadTree(path) {
   }
 
   data.Entries.forEach((entry) => list.appendChild(buildNode(entry)));
-  setTreeStatus("目录已加载，点击 [F] 测试影像进行解译对比。", false);
+  setTreeStatus("目录已加载，点击测试影像进行解译对比。", false);
 }
 
 $("browseRoot").onclick = async () => {

@@ -170,7 +170,7 @@ button {
   cursor: pointer;
   background: #f3f4f6;
   border-color: #dde1e6;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: none;
   transition: background-color .12s ease, border-color .12s ease, color .12s ease;
 }
 
@@ -198,7 +198,7 @@ button.primary {
   background: #2f3742;
   border-color: #2f3742;
   color: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow: none;
 }
 
 button.primary:hover {
@@ -215,7 +215,7 @@ button.success {
   background: #3f6b58;
   border-color: #3f6b58;
   color: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow: none;
 }
 
 button.success:hover {
@@ -298,7 +298,7 @@ button.success:active {
   background: #1f7a53;
   border-color: #1f7a53;
   color: #fff;
-  box-shadow: 0 0 0 2px rgba(31, 122, 83, 0.14);
+  box-shadow: none;
 }
 
 .note {
@@ -351,32 +351,97 @@ button.success:active {
 }
 
 .tree-list button {
-  margin-bottom: 5px;
+  margin-bottom: 0;
   text-align: left;
 }
 
 .tree-ul {
   list-style: none;
   margin: 0;
-  padding-left: 14px;
+  padding-left: 10px;
+  margin-left: 8px;
+  border-left: 1px solid #dde2e8;
 }
 
-.tree-li { margin: 2px 0; }
+.tree-li {
+  margin: 0;
+  position: relative;
+}
+
+.tree-li::before {
+  content: "";
+  position: absolute;
+  left: -9px;
+  top: 14px;
+  width: 7px;
+  height: 1px;
+  background: #dde2e8;
+}
 
 .tree-node {
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: #fff;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
   font-size: 12px;
+  padding: 3px 7px;
+  min-height: 24px;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #344054;
+}
+
+.tree-node::before {
+  content: "•";
+  color: #9ca3af;
+  font-size: 11px;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.tree-node.dir::before {
+  content: "▸";
+  color: #7c8798;
+}
+
+.tree-node.file::before {
+  content: "•";
+  color: #a3acb9;
+}
+
+.tree-node.up::before {
+  content: "↩";
+  color: #7c8798;
+}
+
+.tree-node:hover {
+  border: 0;
+  background: #edf1f5;
+}
+
+.tree-node:active {
+  background: #e6ebf1;
+}
+
+.tree-node.selected {
+  background: #e6ebf1;
+  color: #1f2937;
 }
 
 .tree-node.root {
-  margin-bottom: 8px;
-  padding: 8px 9px;
+  margin-bottom: 4px;
+  padding: 4px 7px;
   font-weight: 650;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: #fff;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #475569;
+}
+
+.tree-node.root::before {
+  content: "";
+  display: none;
 }
 
 .visual-grid {
