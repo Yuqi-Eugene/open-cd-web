@@ -123,6 +123,8 @@ window.renderJobs = async (chipsId, options = {}) => {
     const s = statusMap[j.Status] ?? String(j.Status);
     if (j.Status === 1) {
       btn.classList.add("running");
+    } else if (j.Status === 3) {
+      btn.classList.add("failed");
     }
     btn.textContent = `${formatType(j.Type)} | ${s} | ${String(j.Id || "").slice(-2)}`;
     btn.onclick = () => {

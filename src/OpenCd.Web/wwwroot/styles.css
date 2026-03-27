@@ -195,37 +195,37 @@ button[disabled] {
 }
 
 button.primary {
-  background: #2f3742;
-  border-color: #2f3742;
+  background: #1f7a53;
+  border-color: #1f7a53;
   color: #fff;
   box-shadow: none;
 }
 
 button.primary:hover {
-  background: #2a323c;
-  border-color: #2a323c;
+  background: #1b6e4a;
+  border-color: #1b6e4a;
 }
 
 button.primary:active {
-  background: #242b33;
-  border-color: #242b33;
+  background: #165d3e;
+  border-color: #165d3e;
 }
 
 button.success {
-  background: #3f6b58;
-  border-color: #3f6b58;
+  background: #7f9f91;
+  border-color: #7f9f91;
   color: #fff;
   box-shadow: none;
 }
 
 button.success:hover {
-  background: #385e4e;
-  border-color: #385e4e;
+  background: #76978a;
+  border-color: #76978a;
 }
 
 button.success:active {
-  background: #324f43;
-  border-color: #324f43;
+  background: #6d8f82;
+  border-color: #6d8f82;
 }
 
 .row {
@@ -297,6 +297,13 @@ button.success:active {
 .chip.job-chip.running {
   background: #1f7a53;
   border-color: #1f7a53;
+  color: #fff;
+  box-shadow: none;
+}
+
+.chip.job-chip.failed {
+  background: #c25757;
+  border-color: #c25757;
   color: #fff;
   box-shadow: none;
 }

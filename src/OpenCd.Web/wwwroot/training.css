@@ -205,6 +205,14 @@
   max-height: 110px;
 }
 
+#configSelect,
+#ckptSelect {
+  min-height: 38px;
+  height: 38px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
 @media (max-width: 900px) {
   .tr-top-grid {
     grid-template-columns: 1fr;
